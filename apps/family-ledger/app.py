@@ -1,10 +1,10 @@
-"""家庭账本：账户、交易、资产负债表；凭证通过 SDK 上传到 OS。"""
+"""Family ledger: accounts, transactions, balance sheet; receipts uploaded via SDK to OS."""
 import json
 import os
 import sqlite3
 import sys
 
-# 允许从项目根或 /apps 运行
+# Allow running from project root or /apps
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(ROOT))))

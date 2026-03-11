@@ -1,4 +1,4 @@
-"""wowOS SDK：应用通过本 SDK 调用 OS API。支持 mock 模式连接 mock_os。"""
+"""wowOS SDK: apps call OS API through this SDK. Supports mock mode to mock_os."""
 import json
 import os
 from typing import Any, Dict, List, Optional

@@ -1,11 +1,11 @@
 {
   "id": "com.wowos.family-ledger",
-  "name": "家庭账本",
+  "name": "Family Ledger",
   "version": "1.0.0",
   "entry": "app.py",
   "type": "web",
   "port": 5001,
-  "description": "管理家庭收支和资产负债表",
+  "description": "Manage family income, expenses and balance sheet",
   "author": "wowOS Team",
   "license": "MIT",
   "required_os_version": ">=1.0",

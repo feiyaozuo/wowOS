@@ -1,4 +1,4 @@
-"""应用管理服务：安装/更新/卸载、已安装列表、与应用中心通信；安装时生成 systemd unit。"""
+"""App manager: install/update/uninstall, list installed, talk to app center; generates systemd unit on install."""
 import json
 import os
 import hashlib
@@ -8,6 +8,10 @@ import subprocess
 import tarfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+
+# Per-app system user prefix; each app gets wowapp-<safe_app_id>
+WOWAPP_USER_PREFIX = "wowapp"
+DATA_APPS_DIR = os.environ.get("WOWOS_DATA_APPS", "/data/apps")
 
 try:
     import requests
@@ -61,9 +65,44 @@ class AppManager:
         )
         self.conn.commit()
 
+    @staticmethod
+    def _safe_app_id(app_id: str) -> str:
+        """Safe id for systemd unit name and system username."""
+        return app_id.replace(".", "-").replace("@", "-")
+
+    def _ensure_app_user(self, app_id: str) -> Optional[str]:
+        """Ensure system user wowapp-<safe_id> exists; return username or None on failure."""
+        safe_id = self._safe_app_id(app_id)
+        user = f"{WOWAPP_USER_PREFIX}-{safe_id}"
+        try:
+            subprocess.run(
+                ["id", user],
+                check=True,
+                capture_output=True,
+            )
+            return user
+        except subprocess.CalledProcessError:
+            pass
+        try:
+            subprocess.run(
+                ["useradd", "--system", "--no-create-home", "--shell", "/usr/sbin/nologin", user],
+                check=True,
+                capture_output=True,
+            )
+            return user
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return None
+
     def _generate_systemd_unit(self, app_id: str, install_path: str, port: int) -> str:
-        """生成 systemd unit 内容；实际安装时写入 /etc/systemd/system/。"""
-        safe_id = app_id.replace(".", "-").replace("@", "-")
+        """Generate systemd unit content (drop privileges + sandbox); written to /etc/systemd/system/ on install."""
+        safe_id = self._safe_app_id(app_id)
+        user = f"{WOWAPP_USER_PREFIX}-{safe_id}"
+        # Only app dir and optional data dir; do not expose /data/files
+        rw_paths = [install_path]
+        app_data = os.path.join(DATA_APPS_DIR, app_id)
+        if os.path.isdir(app_data):
+            rw_paths.append(app_data)
+        read_write_paths = " ".join(rw_paths)
         return f"""[Unit]
 Description=wowOS App {app_id}
 After=network.target wowos-api.service
@@ -71,6 +110,13 @@ Requires=wowos-api.service
 
 [Service]
 Type=simple
+User={user}
+Group={user}
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths={read_write_paths}
 WorkingDirectory={install_path}
 ExecStart=/usr/bin/python3 {install_path}/app.py
 Restart=on-failure
@@ -83,8 +129,34 @@ Environment="WOWOS_APP_PORT={port}"
 WantedBy=multi-user.target
 """
 
+    def _safe_extract_tar(self, tar_path: str, install_path: str) -> bool:
+        """Safely extract .wapp: reject path traversal, absolute paths, symlinks pointing outside."""
+        install_path_abs = os.path.abspath(install_path)
+        try:
+            with tarfile.open(tar_path, "r:gz") as tar:
+                for member in tar.getmembers():
+                    name = member.name
+                    if name.startswith("/") or ".." in name:
+                        return False
+                    dest = os.path.normpath(os.path.join(install_path, name))
+                    if not os.path.abspath(dest).startswith(install_path_abs):
+                        return False
+                    link_target = getattr(member, "linkname", None)
+                    if link_target is not None:
+                        if link_target.startswith("/") or ".." in link_target:
+                            return False
+                        resolved = os.path.normpath(
+                            os.path.join(os.path.dirname(dest), link_target)
+                        )
+                        if not os.path.abspath(resolved).startswith(install_path_abs):
+                            return False
+                    tar.extract(member, install_path)
+        except (tarfile.TarError, OSError):
+            return False
+        return True
+
     def _install_systemd_unit(self, app_id: str, install_path: str, port: int) -> bool:
-        """生成并安装 systemd unit；需 root。"""
+        """Generate and install systemd unit; requires root."""
         content = self._generate_systemd_unit(app_id, install_path, port)
         unit_name = f"wowos-app-{app_id.replace('.', '-')}.service"
         unit_path = os.path.join(SYSTEMD_UNIT_DIR, unit_name)
@@ -134,8 +206,24 @@ WantedBy=multi-user.target
 
         install_path = os.path.join(APP_DIR, app_id)
         os.makedirs(install_path, exist_ok=True)
-        with tarfile.open(pkg_path, "r:gz") as tar:
-            tar.extractall(install_path)
+        app_user = self._ensure_app_user(app_id)
+        if not app_user:
+            shutil.rmtree(install_path, ignore_errors=True)
+            return False
+        if not self._safe_extract_tar(pkg_path, install_path):
+            shutil.rmtree(install_path, ignore_errors=True)
+            return False
+        try:
+            subprocess.run(["chown", "-R", f"{app_user}:{app_user}", install_path], check=True, capture_output=True)
+        except subprocess.CalledProcessError:
+            shutil.rmtree(install_path, ignore_errors=True)
+            return False
+        app_data = os.path.join(DATA_APPS_DIR, app_id)
+        os.makedirs(app_data, exist_ok=True)
+        try:
+            subprocess.run(["chown", "-R", f"{app_user}:{app_user}", app_data], check=True, capture_output=True)
+        except subprocess.CalledProcessError:
+            pass
 
         manifest_path = os.path.join(install_path, "manifest.json")
         if not os.path.exists(manifest_path):
@@ -185,6 +273,11 @@ WantedBy=multi-user.target
             if os.path.exists(unit_path):
                 os.remove(unit_path)
             subprocess.run(["systemctl", "daemon-reload"], capture_output=True)
+        except Exception:
+            pass
+        safe_id = self._safe_app_id(app_id)
+        try:
+            subprocess.run(["userdel", f"{WOWAPP_USER_PREFIX}-{safe_id}"], capture_output=True)
         except Exception:
             pass
         return True

@@ -1,1 +1,1 @@
-# wowOS Core - 数据主权内核、文件管理、加密存储、系统 API
+# wowOS Core - data-sovereignty kernel, file manager, crypto storage, system API

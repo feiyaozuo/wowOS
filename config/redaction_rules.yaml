@@ -1,7 +1,8 @@
+# Redaction rules: level_X_to_Y downgrades data from level X to Y (text/numeric/image)
 level_4_to_2:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
-    replace: '身份证号：********'
+    replace: 'ID: ********'
   - type: image
     method: blur_faces
 level_3_to_1:
@@ -11,4 +12,4 @@ level_3_to_1:
 level_4_to_3:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
-    replace: '身份证号：********'
+    replace: 'ID: ********'

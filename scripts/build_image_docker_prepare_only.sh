@@ -1,5 +1,5 @@
 #!/bin/bash
-# 在 Docker 内执行「仅准备」构建：不 chroot apt，只复制代码并添加用户。烧录后需在树莓派上执行一次安装依赖。
+# Prepare-only build inside Docker: no chroot apt, only copy code and add user. After flash run install-deps once on Pi.
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -53,11 +53,14 @@ docker run --rm --privileged \
     WOWOS_GID=999
     echo "wowos:x:${WOWOS_GID}:" >> /mnt/wowos/etc/group
     echo "wowos:x:${WOWOS_UID}:${WOWOS_GID}:wowOS service:/var/lib/wowos:/bin/false" >> /mnt/wowos/etc/passwd
-    mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files
+    mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files /mnt/wowos/data/apps
     cp -r /wowos/wowos_core /mnt/wowos/opt/wowos/
     cp -r /wowos/config /mnt/wowos/opt/wowos/
     cp /wowos/requirements.txt /mnt/wowos/opt/wowos/ 2>/dev/null || true
     chown -R ${WOWOS_UID}:${WOWOS_GID} /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data
+    chmod 751 /mnt/wowos/data
+    chmod 700 /mnt/wowos/data/files
+    chmod 751 /mnt/wowos/data/apps
     cp /wowos/services/wowos-api.service /mnt/wowos/etc/systemd/system/
     touch /mnt/wowos/boot/ssh
     cp /wowos/scripts/firstboot_wizard.sh /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true

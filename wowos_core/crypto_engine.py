@@ -1,4 +1,4 @@
-"""加密存储引擎：文件级 FEK，设备主密钥加密 FEK。存储格式：nonce(12) + ciphertext；FEK 包：encrypted_fek + nonce_master(12)。"""
+"""Crypto storage engine: per-file FEK, device master key encrypts FEK. Format: nonce(12)+ciphertext; FEK blob: encrypted_fek+nonce_master(12)."""
 import os
 import hashlib
 from typing import Tuple
@@ -8,9 +8,29 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 NONCE_LEN = 12
 FEK_LEN = 32
 
+# Device salt file path; must exist in production and be unique per device
+DEVICE_SALT_PATH = os.environ.get(
+    "WOWOS_DEVICE_SALT_PATH",
+    os.path.join(os.environ.get("VAR_LIB_WOWOS", "/var/lib/wowos"), "device_salt"),
+)
+DEV_MODE = os.environ.get("WOWOS_DEV_MODE", "").lower() in ("1", "true", "yes")
+
+
+def _get_salt() -> bytes:
+    """Read device salt; raise in production if missing; use fixed salt in dev."""
+    if os.path.isfile(DEVICE_SALT_PATH):
+        with open(DEVICE_SALT_PATH, "rb") as f:
+            return f.read()
+    if DEV_MODE:
+        return b"wowos_salt"
+    raise RuntimeError(
+        f"Production mode: missing device salt at {DEVICE_SALT_PATH}. "
+        "Run firstboot wizard or create salt file."
+    )
+
 
 def get_device_key() -> bytes:
-    """从设备 ID + 用户密码派生设备主密钥；无 HSM 时使用 PBKDF2。"""
+    """Derive device master key from device ID + user password + device salt; PBKDF2 when no HSM."""
     device_id = os.environ.get("WOWOS_DEVICE_ID", "")
     if not device_id:
         try:
@@ -19,7 +39,7 @@ def get_device_key() -> bytes:
         except (FileNotFoundError, OSError):
             device_id = "wowos-dev-fallback"
     user_password = os.environ.get("WOWOS_DEVICE_PASSWORD", "user_supplied")
-    salt = b"wowos_salt"
+    salt = _get_salt()
     return hashlib.pbkdf2_hmac(
         "sha256", (device_id + user_password).encode(), salt, 100000
     )
@@ -38,12 +58,12 @@ def _device_key_bytes() -> bytes:
 class CryptoEngine:
     @staticmethod
     def encrypt_file(data: bytes) -> Tuple[bytes, bytes]:
-        """返回 (nonce + 密文, encrypted_fek + nonce_master)。"""
+        """Return (nonce + ciphertext, encrypted_fek + nonce_master)."""
         fek = os.urandom(FEK_LEN)
         aesgcm = AESGCM(fek)
         nonce = os.urandom(NONCE_LEN)
         encrypted_data = aesgcm.encrypt(nonce, data, None)
-        # 存储格式：nonce + ciphertext，便于解密时解析
+        # Store as nonce + ciphertext for easy parse on decrypt
         data_blob = nonce + encrypted_data
 
         key = _device_key_bytes()
@@ -55,7 +75,7 @@ class CryptoEngine:
 
     @staticmethod
     def decrypt_file(encrypted_data: bytes, encrypted_fek_with_nonce: bytes) -> bytes:
-        """encrypted_data = nonce(12) + ciphertext；encrypted_fek_with_nonce = encrypted_fek + nonce_master(12)。"""
+        """encrypted_data = nonce(12)+ciphertext; encrypted_fek_with_nonce = encrypted_fek+nonce_master(12)."""
         if len(encrypted_data) < NONCE_LEN:
             raise ValueError("encrypted_data too short")
         nonce = encrypted_data[:NONCE_LEN]

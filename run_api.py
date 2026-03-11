@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""启动 wowOS 系统服务 API（开发环境：数据目录为 ./data）。"""
+"""Start wowOS system API (dev: data dir is ./data)."""
 import os
 import sys
 
-# 确保项目根在 path 中，且开发环境默认数据目录
+# Ensure project root on path and dev default data dir
 ROOT = os.path.dirname(os.path.abspath(__file__))
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)

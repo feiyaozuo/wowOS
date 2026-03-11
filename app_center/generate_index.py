@@ -1,4 +1,4 @@
-"""从 .wapp 包内 manifest.json 生成 apps.json 索引。"""
+"""Generate apps.json index from manifest.json inside .wapp packages."""
 import json
 import hashlib
 import os

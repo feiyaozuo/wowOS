@@ -1,4 +1,4 @@
-"""系统服务 API：对外提供 REST API，所有请求需携带 Token（除健康检查与 Token 签发）。"""
+"""System API: REST API; all requests require a token except health check and token issuance."""
 import io
 import json
 import os
@@ -24,11 +24,30 @@ def _get_data_type_from_name(name: str) -> str:
     return "text"
 
 
+# Admin auth: only requests with WOWOS_ADMIN_TOKEN may call tokens/audit etc.
+ADMIN_TOKEN = os.environ.get("WOWOS_ADMIN_TOKEN", "")
+
+
 def _auth_token():
     auth_header = request.headers.get("Authorization")
     if not auth_header or not auth_header.startswith("Bearer "):
         return None
     return auth_header.split()[1]
+
+
+def _require_admin():
+    """Verify admin; return (error_response, status_code) if ADMIN_TOKEN not set or token missing/invalid."""
+    if not ADMIN_TOKEN:
+        return jsonify({"error": "Admin not configured"}), 503
+    token = _auth_token()
+    if not token or token != ADMIN_TOKEN:
+        audit_logger.log({
+            "event_type": "admin_access",
+            "resource": request.path,
+            "result": "unauthorized",
+        })
+        return jsonify({"error": "Admin token required"}), 403
+    return None
 
 
 @app.route("/api/v1/health", methods=["GET"])
@@ -148,7 +167,10 @@ def delete_file(file_id):
 
 @app.route("/api/v1/tokens", methods=["POST"])
 def create_token():
-    """生成临时 Token；生产环境需经用户授权界面。"""
+    """Issue token; admin only (or after first-run wizard sets admin token)."""
+    err = _require_admin()
+    if err is not None:
+        return err
     body = request.get_json() or {}
     app_id = body.get("app_id")
     user_id = body.get("user_id", "default")
@@ -159,25 +181,68 @@ def create_token():
         return jsonify({"error": "app_id required"}), 400
 
     token = TokenService.generate_token(app_id, user_id, resources, max_level, ttl)
+    payload = TokenService.decode_payload(token)
+    token_id = payload.get("token_id") if payload else None
+    audit_logger.log({
+        "event_type": "token_issued",
+        "app_id": app_id,
+        "user_id": user_id,
+        "resource": "tokens",
+        "token_id": token_id,
+        "result": "success",
+    })
     return jsonify({"token": token}), 200
 
 
 @app.route("/api/v1/audit", methods=["GET"])
 def get_audit():
-    """查询审计日志；生产环境需管理员权限。"""
-    limit = int(request.args.get("limit", 100))
+    """Query audit log; admin only; pagination and default redaction of sensitive fields."""
+    err = _require_admin()
+    if err is not None:
+        return err
+    limit = min(int(request.args.get("limit", 100)), 1000)
+    offset = max(0, int(request.args.get("offset", 0)))
+    redact = request.args.get("redact", "1").lower() in ("1", "true", "yes")
     import sqlite3
     conn = sqlite3.connect(audit_logger.db_path)
     conn.row_factory = sqlite3.Row
     rows = conn.execute(
-        "SELECT * FROM audit_log ORDER BY id DESC LIMIT ?", (limit,)
+        "SELECT * FROM audit_log ORDER BY id DESC LIMIT ? OFFSET ?", (limit, offset)
     ).fetchall()
     conn.close()
     items = [dict(r) for r in rows]
-    return jsonify({"items": items}), 200
+    if redact and items:
+        for row in items:
+            if row.get("user_id"):
+                row["user_id"] = (row["user_id"][:1] + "***") if len(row["user_id"]) > 1 else "***"
+            if row.get("token_id"):
+                row["token_id"] = (row["token_id"][:8] + "***") if len(row["token_id"]) > 8 else "***"
+    return jsonify({"items": items, "limit": limit, "offset": offset}), 200
+
+
+@app.route("/api/v1/tokens/revoke", methods=["POST"])
+def revoke_token():
+    """Revoke token; admin only."""
+    err = _require_admin()
+    if err is not None:
+        return err
+    body = request.get_json() or {}
+    token_id = body.get("token_id")
+    if not token_id:
+        return jsonify({"error": "token_id required"}), 400
+    TokenService.revoke_token(token_id)
+    audit_logger.log({
+        "event_type": "token_revoked",
+        "resource": "tokens",
+        "token_id": token_id,
+        "result": "success",
+    })
+    return jsonify({"status": "revoked", "token_id": token_id}), 200
 
 
 def run():
+    from wowos_core.bootstrap import check_production_key_material
+    check_production_key_material()
     port = int(os.environ.get("WOWOS_API_PORT", "8080"))
     app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG", "0") == "1")
 

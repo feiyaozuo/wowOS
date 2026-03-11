@@ -1,58 +1,59 @@
-# wowOS 开发与运行说明
+# wowOS Development and Run
 
-## 本地运行（无需树莓派）
+## Local run (no Pi required)
 
-### 1. 安装依赖
+### 1. Install dependencies
 
 ```bash
 pip3 install -r requirements.txt
 ```
 
-### 2. 启动系统 API
+### 2. Start system API
 
 ```bash
 python3 run_api.py
-# 默认 http://localhost:8080
+# Default http://localhost:8080
 ```
 
-### 3. 获取 Token 并测试
+### 3. Get token and test
 
 ```bash
-# 生成 Token
+# Issue token (requires admin token in production; set WOWOS_DEV_MODE=1 and WOWOS_ADMIN_TOKEN for dev)
 curl -X POST http://localhost:8080/api/v1/tokens \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_ADMIN_TOKEN" \
   -d '{"app_id":"test","user_id":"u1","resources":["file/*"],"max_level":3,"ttl":3600}'
 
-# 上传文件（将 TOKEN 替换为上一步返回的 token）
+# Upload file (replace TOKEN with the token from above)
 curl -X POST http://localhost:8080/api/v1/files \
   -H "Authorization: Bearer TOKEN" \
   -F "file=@/path/to/file" -F "privacy_level=3"
 
-# 下载文件
+# Download file
 curl -H "Authorization: Bearer TOKEN" "http://localhost:8080/api/v1/files/FILE_ID" -o out
 ```
 
-### 4. 使用 mock_os 开发应用
+### 4. Develop apps with mock_os
 
 ```bash
-# 终端 1：启动 mock 服务
+# Terminal 1: start mock service
 python3 run_mock_os.py
-# 默认 http://localhost:8081
+# Default http://localhost:8081
 
-# 终端 2：以 mock 模式运行家庭账本
+# Terminal 2: run Family Ledger in mock mode
 export WOWOS_MOCK=1
 cd apps/family-ledger && python3 app.py
-# 访问 http://localhost:5001
+# Open http://localhost:5001
 ```
 
-### 5. 应用中心与打包
+### 5. App center and packaging
 
-- 将应用打成 `.wapp`（tar.gz，内含 manifest.json 等）放入 `app_center/packages/`
-- 生成索引：`cd app_center && python3 generate_index.py`
-- 启动静态服务：`cd app_center && python3 -m http.server 8000`
-- 应用管理：使用 `apps/app_manager.py` 的 `AppManager` 安装/卸载（需配置应用中心 URL）
+- Package apps as `.wapp` (tar.gz with manifest.json etc.) and put under `app_center/packages/`
+- Generate index: `cd app_center && python3 generate_index.py`
+- Serve static: `cd app_center && python3 -m http.server 8000`
+- App management: use `AppManager` in `apps/app_manager.py` to install/uninstall (configure app center URL).
 
-### 6. 数据目录
+### 6. Data directories
 
-- 开发环境默认使用项目下 `data/`（审计库、撤销列表、文件存储、应用 DB 等）
-- 可通过环境变量覆盖：`VAR_LIB_WOWOS`、`WOWOS_DATA_PATH`、`WOWOS_AUDIT_DB` 等
+- Dev default: project `data/` (audit DB, revocation list, file storage, app DB, etc.)
+- Override with env: `VAR_LIB_WOWOS`, `WOWOS_DATA_PATH`, `WOWOS_AUDIT_DB`, etc.

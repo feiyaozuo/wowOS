@@ -1,4 +1,4 @@
-"""Token 授权服务：颁发、验证、撤销访问令牌。"""
+"""Token service: issue, verify, and revoke access tokens."""
 import json
 import os
 import time
@@ -8,8 +8,12 @@ from uuid import uuid4
 
 import jwt
 
-# 密钥从环境变量读取，不入库；默认仅开发用
-SECRET_KEY = os.environ.get("WOWOS_SECRET_KEY", "device-unique-secret-dev-only")
+# Secret from env, not stored; dev may use default, production must set explicitly
+_DEV_MODE = os.environ.get("WOWOS_DEV_MODE", "").lower() in ("1", "true", "yes")
+_RAW_SECRET = os.environ.get("WOWOS_SECRET_KEY", "")
+SECRET_KEY = _RAW_SECRET if _RAW_SECRET else (
+    "device-unique-secret-dev-only" if _DEV_MODE else ""
+)
 
 
 def _var_lib_wowos() -> str:
@@ -53,6 +57,14 @@ def _persist_revocation() -> None:
     _save_revocation_list(_revocation_list())
 
 
+def _require_secret_key() -> None:
+    """Refuse issue/verify in production when SECRET_KEY is not set."""
+    if not SECRET_KEY or (not _DEV_MODE and SECRET_KEY == "device-unique-secret-dev-only"):
+        raise RuntimeError(
+            "WOWOS_SECRET_KEY is not set or is dev default; required in production."
+        )
+
+
 class TokenService:
     @staticmethod
     def generate_token(
@@ -63,6 +75,7 @@ class TokenService:
         ttl_seconds: int,
         operations: Optional[List[str]] = None,
     ) -> str:
+        _require_secret_key()
         payload = {
             "token_id": "tkn_" + uuid4().hex[:12],
             "app_id": app_id,
@@ -90,6 +103,7 @@ class TokenService:
     def verify_token(
         token: str, required_resource: str, required_level: int, operation: str = "read"
     ) -> bool:
+        _require_secret_key()
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             if payload["exp"] < time.time():
@@ -112,7 +126,8 @@ class TokenService:
 
     @staticmethod
     def decode_payload(token: str) -> Optional[Dict[str, Any]]:
-        """解析 Token 获取 user_id、app_id 等，用于审计；无效则返回 None。"""
+        """Decode token to get user_id, app_id, etc. for audit; return None if invalid."""
+        _require_secret_key()
         try:
             payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
             return payload

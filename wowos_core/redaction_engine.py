@@ -1,4 +1,4 @@
-"""数据分级与脱敏引擎：按规则对文本等做降级脱敏。V1 仅支持文本。"""
+"""Data tiering and redaction engine: downgrade/redact by rules. V1 text only."""
 import os
 import re
 from pathlib import Path
@@ -52,5 +52,5 @@ class RedactionEngine:
                         return re.sub(pattern, replace, data.decode("utf-8")).encode("utf-8")
                     except Exception:
                         return data
-        # image / numeric 等 V1 不实现，直接返回原数据或占位
+        # image/numeric etc. not implemented in V1; return as-is
         return data

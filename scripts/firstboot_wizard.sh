@@ -1,20 +1,47 @@
 #!/bin/bash
-# wowOS 首次启动向导：设置管理员密码、设备密钥相关环境（可选）
-# 可在镜像中配置为首次登录时运行，或由 systemd 在 first-boot 时执行一次
+# wowOS first-boot wizard: generate device salt, set device password and token secret, write env for service
+# Can be run on first login or by systemd once on first-boot
 set -e
 CONFIG_DIR="${VAR_LIB_WOWOS:-/var/lib/wowos}"
+SALT_FILE="$CONFIG_DIR/device_salt"
+ENV_FILE="$CONFIG_DIR/env"
 mkdir -p "$CONFIG_DIR"
 
-echo "=== wowOS 首次启动向导 ==="
-echo "本脚本用于设置设备密码（用于密钥派生），并写入环境配置。"
+echo "=== wowOS First-Boot Wizard ==="
 
-read -sp "请输入设备密码（用于加密密钥派生，留空则使用默认）: " DEVICE_PASS
-echo
-if [ -n "$DEVICE_PASS" ]; then
-  echo "WOWOS_DEVICE_PASSWORD=$DEVICE_PASS" >> "$CONFIG_DIR/env"
-  chmod 600 "$CONFIG_DIR/env"
-  echo "已保存到 $CONFIG_DIR/env"
+# 1. Per-device salt (generate once)
+if [ ! -f "$SALT_FILE" ]; then
+  echo "Generating device salt: $SALT_FILE"
+  head -c 32 /dev/urandom | base64 -w0 > "$SALT_FILE"
+  chmod 600 "$SALT_FILE"
 fi
 
-# 可选：从 /sys/class/net/eth0/address 读取的 device_id 已由 crypto_engine 自动使用
-echo "完成。启动 API 服务: systemctl start wowos-api"
+# 2. Device password (used to derive data encryption master key)
+read -sp "Enter device password (for key derivation, required): " DEVICE_PASS
+echo
+if [ -z "$DEVICE_PASS" ]; then
+  echo "No password set; using default (dev only). For production, run again and set a password."
+  DEVICE_PASS="user_supplied"
+fi
+
+# 3. Env file: keep existing keys or generate; write/update WOWOS_DEVICE_PASSWORD and WOWOS_ADMIN_TOKEN
+if [ -f "$ENV_FILE" ]; then
+  SECRET_KEY=$(grep -E '^WOWOS_SECRET_KEY=' "$ENV_FILE" | cut -d= -f2- || true)
+  ADMIN_TOKEN=$(grep -E '^WOWOS_ADMIN_TOKEN=' "$ENV_FILE" | cut -d= -f2- || true)
+fi
+if [ -z "$SECRET_KEY" ]; then
+  SECRET_KEY=$(openssl rand -base64 32 2>/dev/null || head -c 32 /dev/urandom | base64 -w0)
+fi
+if [ -z "$ADMIN_TOKEN" ]; then
+  ADMIN_TOKEN=$(openssl rand -hex 24 2>/dev/null || head -c 24 /dev/urandom | xxd -p -c 256)
+fi
+{
+  echo "WOWOS_SECRET_KEY=$SECRET_KEY"
+  echo "WOWOS_DEVICE_PASSWORD=$DEVICE_PASS"
+  echo "WOWOS_ADMIN_TOKEN=$ADMIN_TOKEN"
+} > "$ENV_FILE"
+chmod 600 "$ENV_FILE"
+
+echo "Written to $ENV_FILE (WOWOS_SECRET_KEY, WOWOS_DEVICE_PASSWORD, WOWOS_ADMIN_TOKEN)"
+echo "Save WOWOS_ADMIN_TOKEN for calling /api/v1/tokens and /api/v1/audit."
+echo "Done. Start API: systemctl start wowos-api"

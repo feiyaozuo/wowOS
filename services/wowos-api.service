@@ -8,6 +8,7 @@ Type=simple
 User=wowos
 Group=wowos
 WorkingDirectory=/opt/wowos
+EnvironmentFile=-/var/lib/wowos/env
 Environment="VAR_LIB_WOWOS=/var/lib/wowos"
 Environment="WOWOS_DATA_PATH=/data"
 Environment="WOWOS_API_PORT=8080"

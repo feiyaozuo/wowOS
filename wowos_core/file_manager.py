@@ -1,4 +1,4 @@
-"""文件管理抽象层：存储、索引、元数据；与加密引擎配合，存盘为密文。"""
+"""File manager: storage, index, metadata; works with crypto engine, persists as ciphertext."""
 import json
 import os
 import hashlib

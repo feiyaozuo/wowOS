@@ -1,4 +1,4 @@
-"""审计日志：记录数据访问与脱敏事件。"""
+"""Audit log: record data access and redaction events."""
 import json
 import os
 import sqlite3

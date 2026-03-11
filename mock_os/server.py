@@ -1,4 +1,4 @@
-"""mock_os 模拟服务：与真实 OS API 一致的端点，用于本地开发。"""
+"""mock_os: same endpoints as real OS API for local dev."""
 import io
 import json
 import os

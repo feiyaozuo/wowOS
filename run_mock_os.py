@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""启动 mock_os 模拟服务（开发用）。"""
+"""Start mock_os (dev/test)."""
 import os
 import sys
 ROOT = os.path.dirname(os.path.abspath(__file__))
