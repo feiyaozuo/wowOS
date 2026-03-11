@@ -1,0 +1,16 @@
+data/
+mock-data/
+build/
+*.db
+__pycache__/
+*.pyc
+.Python
+.env
+.env.*
+*.img
+*.img.xz
+*.zip
+/var/
+*.wapp
+.venv/
+venv/

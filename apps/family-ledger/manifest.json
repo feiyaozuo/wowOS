@@ -1,0 +1,16 @@
+{
+  "id": "com.wowos.family-ledger",
+  "name": "家庭账本",
+  "version": "1.0.0",
+  "entry": "app.py",
+  "type": "web",
+  "port": 5001,
+  "description": "管理家庭收支和资产负债表",
+  "author": "wowOS Team",
+  "license": "MIT",
+  "required_os_version": ">=1.0",
+  "permissions": {
+    "resources": ["file/*"],
+    "max_allowed_level": 2
+  }
+}

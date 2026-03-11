@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>家庭账本</title>
+</head>
+<body>
+    <h1>家庭账本</h1>
+    <div id="balance"></div>
+    <script>
+        fetch('/api/balance')
+            .then(r => r.json())
+            .then(data => {
+                document.getElementById('balance').innerHTML = [
+                    '总资产: ' + data.assets,
+                    '总负债: ' + data.liabilities,
+                    '净资产: ' + data.net
+                ].join('<br>');
+            })
+            .catch(() => {
+                document.getElementById('balance').innerHTML = '加载失败';
+            });
+    </script>
+</body>
+</html>

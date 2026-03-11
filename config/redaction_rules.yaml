@@ -1,0 +1,14 @@
+level_4_to_2:
+  - type: text
+    pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
+    replace: '身份证号：********'
+  - type: image
+    method: blur_faces
+level_3_to_1:
+  - type: numeric
+    range: [0, 100000]
+    generalization: 10000
+level_4_to_3:
+  - type: text
+    pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
+    replace: '身份证号：********'

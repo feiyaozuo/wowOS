@@ -1,0 +1,19 @@
+[Unit]
+Description=wowOS System API
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User=wowos
+Group=wowos
+WorkingDirectory=/opt/wowos
+Environment="VAR_LIB_WOWOS=/var/lib/wowos"
+Environment="WOWOS_DATA_PATH=/data"
+Environment="WOWOS_API_PORT=8080"
+ExecStart=/usr/bin/python3 -c "import sys; sys.path.insert(0, '/opt/wowos'); from wowos_core.api_server import run; run()"
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
