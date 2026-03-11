@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 env:
-  # 提前使用 Node 24，消除 Node 20 弃用警告，避免 2026-06 后失效
+  # Use Node 24 early to avoid Node 20 deprecation warning (default from 2026-06)
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
 jobs:

@@ -1,9 +1,9 @@
 #!/bin/bash
-# 仅准备镜像：挂载后复制 wowOS 代码、创建用户、配置 systemd，不执行 chroot apt-get。
-# 适用于无外网或 Docker 内 chroot 无法拉包的环境。烧录后首次启动需在树莓派上执行一次：
+# Prepare-only image: mount, copy wowOS code, create user, configure systemd; no chroot apt-get.
+# Use when offline or when chroot cannot pull packages (e.g. in Docker). After flash, on Pi run once:
 #   sudo apt update && sudo apt install -y python3 python3-pip sqlite3
 #   sudo python3 -m pip install --break-system-packages flask pyjwt cryptography pyyaml requests
-# 然后 systemctl start wowos-api
+# then systemctl start wowos-api
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -53,24 +53,27 @@ else
   mount /dev/mapper/${MAPPER}p1 /mnt/wowos/boot
 fi
 
-# 在镜像内添加 wowos 用户（直接写 passwd/group）
+# Add wowos user inside image (write passwd/group directly)
 echo "wowos:x:${WOWOS_GID}:" >> /mnt/wowos/etc/group
 echo "wowos:x:${WOWOS_UID}:${WOWOS_GID}:wowOS service:/var/lib/wowos:/bin/false" >> /mnt/wowos/etc/passwd
-mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files
+mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files /mnt/wowos/data/apps
 cp -r "$PROJECT_ROOT/wowos_core" /mnt/wowos/opt/wowos/
 cp -r "$PROJECT_ROOT/config" /mnt/wowos/opt/wowos/
 cp "$PROJECT_ROOT/requirements.txt" /mnt/wowos/opt/wowos/ 2>/dev/null || true
 chown -R ${WOWOS_UID}:${WOWOS_GID} /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data
+chmod 751 /mnt/wowos/data
+chmod 700 /mnt/wowos/data/files
+chmod 751 /mnt/wowos/data/apps
 cp "$PROJECT_ROOT/services/wowos-api.service" /mnt/wowos/etc/systemd/system/
 touch /mnt/wowos/boot/ssh
 cp "$PROJECT_ROOT/scripts/firstboot_wizard.sh" /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
 chmod +x /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
 
-# 写入首次启动安装依赖的说明
+# Write first-boot install-deps script
 mkdir -p /mnt/wowos/root
 cat > /mnt/wowos/root/wowos-firstboot-install.sh << 'INNER'
 #!/bin/bash
-# 在树莓派上首次启动后以 root 执行一次
+# Run once as root on Pi after first boot
 apt-get update && apt-get install -y python3 python3-pip sqlite3
 python3 -m pip install --break-system-packages flask pyjwt cryptography pyyaml requests
 systemctl start wowos-api
