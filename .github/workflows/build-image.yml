@@ -1,4 +1,5 @@
-# wowOS 镜像构建：在 GitHub 提供的 Linux 环境下执行完整构建，产出可烧录的 zip
+# wowOS 镜像构建：在 GitHub 的 x86 环境下做「仅准备」构建（不 chroot，避免 ARM/x86 架构冲突）
+# 烧录后需在树莓派上执行一次：sudo /root/wowos-firstboot-install.sh
 name: Build wowOS Image
 
 on:
@@ -16,19 +17,16 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zip xz-utils file
+          sudo apt-get install -y wget zip xz-utils file kpartx
 
-      - name: Build image
+      - name: Build image (prepare-only)
         env:
           BUILD_DIR: ${{ github.workspace }}/build
           WOWOS_VERSION: "1.0"
         run: |
-          sudo mkdir -p "$BUILD_DIR"
+          mkdir -p "$BUILD_DIR"
+          sudo -E BUILD_DIR="$BUILD_DIR" bash "${{ github.workspace }}/scripts/build_image_prepare_only.sh"
           sudo chown -R $USER:$USER "$BUILD_DIR"
-          sudo -E BUILD_DIR="$BUILD_DIR" bash "${{ github.workspace }}/scripts/build_image.sh"
-
-      - name: Fix build dir ownership
-        run: sudo chown -R $USER:$USER ${{ github.workspace }}/build
 
       - name: Upload image artifact
         uses: actions/upload-artifact@v4
