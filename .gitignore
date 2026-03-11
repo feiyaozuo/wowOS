@@ -1,16 +1,69 @@
-data/
-mock-data/
-build/
-*.db
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+.cursor/
+.vscode/
+
+# =========================
+# Python
+# =========================
 __pycache__/
 *.pyc
 .Python
-.env
-.env.*
-*.img
-*.img.xz
-*.zip
-/var/
-*.wapp
 .venv/
 venv/
+
+# =========================
+# Secrets / Env
+# =========================
+.env
+.env.*
+secrets/
+*.key
+*.pem
+*.p12
+*.crt
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Local runtime / data
+# =========================
+data/
+mock-data/
+tmp/
+cache/
+
+# =========================
+# Local databases
+# =========================
+*.db
+*.sqlite
+*.sqlite3
+
+# =========================
+# Build outputs
+# =========================
+build/
+dist/
+out/
+*.img
+*.img.xz
+*.img.zip
+*.zip
+
+# =========================
+# wowOS app packages (dev)
+# =========================
+*.wapp
+/var/
+
+# =========================
+# AI / model cache
+# =========================
+models/
+.checkpoints/
