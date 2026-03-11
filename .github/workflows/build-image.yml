@@ -1,5 +1,3 @@
-# wowOS 镜像构建：在 GitHub 的 x86 环境下做「仅准备」构建（不 chroot，避免 ARM/x86 架构冲突）
-# 烧录后需在树莓派上执行一次：sudo /root/wowos-firstboot-install.sh
 name: Build wowOS Image
 
 on:
@@ -7,9 +5,16 @@ on:
     branches: [main, master]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      BUILD_DIR: ${{ github.workspace }}/build
+      WOWOS_VERSION: "1.0"
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -17,19 +22,25 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zip xz-utils file kpartx
+          sudo apt-get install -y wget zip xz-utils file kpartx util-linux
 
       - name: Build image (prepare-only)
-        env:
-          BUILD_DIR: ${{ github.workspace }}/build
-          WOWOS_VERSION: "1.0"
         run: |
           mkdir -p "$BUILD_DIR"
-          sudo -E BUILD_DIR="$BUILD_DIR" bash "${{ github.workspace }}/scripts/build_image_prepare_only.sh"
-          sudo chown -R $USER:$USER "$BUILD_DIR"
+          sudo -E BUILD_DIR="$BUILD_DIR" WOWOS_VERSION="$WOWOS_VERSION" \
+            bash "${{ github.workspace }}/scripts/build_image_prepare_only.sh"
+          sudo chown -R "$USER:$USER" "$BUILD_DIR"
+
+      - name: Verify output
+        run: |
+          echo "=== build dir ==="
+          ls -lah "$BUILD_DIR"
+          test -f "$BUILD_DIR/wowos-${WOWOS_VERSION}.img.zip"
 
       - name: Upload image artifact
         uses: actions/upload-artifact@v4
         with:
           name: wowos-image
           path: build/wowos-*.img.zip
+          if-no-files-found: error
+          retention-days: 7
