@@ -59,15 +59,25 @@ echo "wowos:x:${WOWOS_UID}:${WOWOS_GID}:wowOS service:/var/lib/wowos:/bin/false"
 mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files /mnt/wowos/data/apps
 cp -r "$PROJECT_ROOT/wowos_core" /mnt/wowos/opt/wowos/
 cp -r "$PROJECT_ROOT/config" /mnt/wowos/opt/wowos/
+cp -r "$PROJECT_ROOT/ui" /mnt/wowos/opt/wowos/ 2>/dev/null || true
 cp "$PROJECT_ROOT/requirements.txt" /mnt/wowos/opt/wowos/ 2>/dev/null || true
 chown -R ${WOWOS_UID}:${WOWOS_GID} /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data
 chmod 751 /mnt/wowos/data
 chmod 700 /mnt/wowos/data/files
 chmod 751 /mnt/wowos/data/apps
 cp "$PROJECT_ROOT/services/wowos-api.service" /mnt/wowos/etc/systemd/system/
+cp "$PROJECT_ROOT/services/wowos-desktop.service" /mnt/wowos/etc/systemd/system/ 2>/dev/null || true
+mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
+ln -sf ../wowos-desktop.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-desktop.service 2>/dev/null || true
 touch /mnt/wowos/boot/ssh
 cp "$PROJECT_ROOT/scripts/firstboot_wizard.sh" /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
 chmod +x /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
+# Install desktop once on first boot (oneshot; enable via symlink, no chroot)
+cp "$PROJECT_ROOT/scripts/install_desktop_firstboot.sh" /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+chmod +x /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+cp "$PROJECT_ROOT/services/wowos-install-desktop-once.service" /mnt/wowos/etc/systemd/system/
+mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
+ln -sf ../wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-install-desktop-once.service 2>/dev/null || true
 
 # Write first-boot install-deps script
 mkdir -p /mnt/wowos/root
