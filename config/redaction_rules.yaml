@@ -1,14 +1,39 @@
 # Redaction rules: level_X_to_Y downgrades data from level X to Y (text/numeric/image)
+# L1=1 (normal), L2=2 (sensitive), L3=3 (highly sensitive). 1.0 simple text redaction only.
+level_3_to_1:
+  - type: text
+    pattern: '1[3-9]\d{9}'
+    replace: '***PHONE***'
+  - type: text
+    pattern: '\d{17}[\dXx]'
+    replace: '***ID***'
+  - type: text
+    pattern: '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+    replace: '***EMAIL***'
+  - type: text
+    pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
+    replace: 'ID: ********'
+level_3_to_2:
+  - type: text
+    pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
+    replace: 'ID: ********'
+level_2_to_1:
+  - type: text
+    pattern: '1[3-9]\d{9}'
+    replace: '***PHONE***'
+  - type: text
+    pattern: '\d{17}[\dXx]'
+    replace: '***ID***'
+  - type: text
+    pattern: '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
+    replace: '***EMAIL***'
+# Legacy keys for backward compatibility
 level_4_to_2:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
     replace: 'ID: ********'
   - type: image
     method: blur_faces
-level_3_to_1:
-  - type: numeric
-    range: [0, 100000]
-    generalization: 10000
 level_4_to_3:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'

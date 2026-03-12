@@ -1,0 +1,12 @@
+# Data levels for wowOS 1.0: L1=normal, L2=sensitive, L3=highly sensitive
+# Used for access control and redaction downgrade.
+levels:
+  - level: 1
+    name: normal
+    description: General personal/family data
+  - level: 2
+    name: sensitive
+    description: Sensitive data; redact when downgrading to L1
+  - level: 3
+    name: highly_sensitive
+    description: Highly sensitive; redact when downgrading to L1 or L2

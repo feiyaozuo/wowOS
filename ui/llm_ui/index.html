@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Validate – wowOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; padding: 1.5rem; }
+    a { color: #7eb8ff; }
+    .nav { margin-bottom: 1.5rem; }
+    .nav a { margin-right: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .hint { opacity: .8; font-size: 0.9rem; margin-top: 0.5rem; }
+    .card { background: #16213e; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .card label { display: block; margin-bottom: 0.25rem; }
+    .card select, .card input, .card textarea { width: 100%; max-width: 500px; padding: 0.5rem; background: #0f111a; border: 1px solid #2a2b4e; color: #eee; border-radius: 6px; }
+    .card textarea { min-height: 80px; }
+    .card button { padding: 0.5rem 1rem; margin-right: 0.5rem; margin-top: 0.5rem; cursor: pointer; background: #3d5a80; color: #eee; border: none; border-radius: 6px; }
+    .card button:hover { background: #4d6a90; }
+    .warn { background: #4a3a1e; padding: 0.75rem; border-radius: 6px; margin-bottom: 1rem; }
+    .err { color: #f88; }
+    .result { white-space: pre-wrap; background: #0f111a; padding: 1rem; border-radius: 6px; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a href="/">← Home</a></div>
+  <h1>LLM Validate</h1>
+  <p class="hint">Send a file to an external model (DeepSeek/Kimi). Data may leave this device. Use redact option to reduce exposure.</p>
+
+  <div class="warn">Data will be sent to the selected provider over the internet. Check "Redact first" to downgrade file content to L1 before sending. This call will be recorded in the audit log.</div>
+
+  <div class="card">
+    <label>File (from File Center)</label>
+    <select id="fileId">
+      <option value="">-- Load files first --</option>
+    </select>
+    <label>Provider</label>
+    <select id="providerId">
+      <option value="">-- Load providers --</option>
+    </select>
+    <label><input type="checkbox" id="redactFirst" checked /> Redact file content to L1 before sending</label>
+    <label>Prompt (optional)</label>
+    <textarea id="prompt" placeholder="e.g. Summarize the following.">Summarize the following content.</textarea>
+    <button id="btnSend">Send to LLM</button>
+    <p id="sendErr" class="err" style="display:none;"></p>
+    <div id="result" class="result" style="display:none;"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-top:0;">Recent calls</h3>
+    <button id="btnHistory">Load history</button>
+    <ul id="historyList"></ul>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

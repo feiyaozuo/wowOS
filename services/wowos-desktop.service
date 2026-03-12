@@ -1,0 +1,19 @@
+[Unit]
+Description=wowOS Desktop (Launcher + App/File/Settings UI)
+After=network.target wowos-api.service
+Wants=wowos-api.service
+
+[Service]
+Type=simple
+User=wowos
+Group=wowos
+WorkingDirectory=/opt/wowos/ui
+Environment="WOWOS_API_URL=http://127.0.0.1:8080"
+Environment="WOWOS_APP_CENTER_URL=http://127.0.0.1:8000"
+Environment="WOWOS_DESKTOP_PORT=9090"
+ExecStart=/usr/bin/python3 /opt/wowos/ui/desktop_server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

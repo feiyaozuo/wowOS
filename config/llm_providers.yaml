@@ -1,0 +1,14 @@
+# LLM providers for wowOS 1.0 (controlled external call). Set api_key in env or override.
+# DeepSeek: https://api.deepseek.com
+# Kimi (Moonshot): https://api.moonshot.cn
+providers:
+  deepseek:
+    name: DeepSeek
+    base_url: https://api.deepseek.com
+    model: deepseek-chat
+    api_key: ${DEEPSEEK_API_KEY}
+  kimi:
+    name: Kimi
+    base_url: https://api.moonshot.cn/v1
+    model: moonshot-v1-8k
+    api_key: ${KIMI_API_KEY}

@@ -56,15 +56,24 @@ docker run --rm --privileged \
     mkdir -p /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data/files /mnt/wowos/data/apps
     cp -r /wowos/wowos_core /mnt/wowos/opt/wowos/
     cp -r /wowos/config /mnt/wowos/opt/wowos/
+    cp -r /wowos/ui /mnt/wowos/opt/wowos/ 2>/dev/null || true
     cp /wowos/requirements.txt /mnt/wowos/opt/wowos/ 2>/dev/null || true
     chown -R ${WOWOS_UID}:${WOWOS_GID} /mnt/wowos/opt/wowos /mnt/wowos/var/lib/wowos /mnt/wowos/data
     chmod 751 /mnt/wowos/data
     chmod 700 /mnt/wowos/data/files
     chmod 751 /mnt/wowos/data/apps
     cp /wowos/services/wowos-api.service /mnt/wowos/etc/systemd/system/
+    cp /wowos/services/wowos-desktop.service /mnt/wowos/etc/systemd/system/ 2>/dev/null || true
+    mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
+    ln -sf ../wowos-desktop.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-desktop.service 2>/dev/null || true
     touch /mnt/wowos/boot/ssh
     cp /wowos/scripts/firstboot_wizard.sh /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
     chmod +x /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
+    cp /wowos/scripts/install_desktop_firstboot.sh /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+    chmod +x /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+    cp /wowos/services/wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/
+    mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
+    ln -sf ../wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-install-desktop-once.service 2>/dev/null || true
     mkdir -p /mnt/wowos/root
     cat > /mnt/wowos/root/wowos-firstboot-install.sh << "EOF"
 #!/bin/bash

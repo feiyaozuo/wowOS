@@ -14,9 +14,30 @@ BASE_URL = os.environ.get("WOWOS_APP_CENTER_BASE_URL", "http://localhost:8000")
 def read_manifest_from_wapp(wapp_path: str) -> dict:
     with tarfile.open(wapp_path, "r:gz") as tar:
         for m in tar.getmembers():
-            if m.name.endswith("manifest.json"):
-                f = tar.extractfile(m)
-                return json.load(f)
+            if not m.isfile() or not m.name.endswith("manifest.json"):
+                continue
+            f = tar.extractfile(m)
+            if f is None:
+                continue
+            data = f.read()
+            if not data.strip():
+                continue
+            text = None
+            for enc in ("utf-8", "latin-1", "cp1252"):
+                try:
+                    text = data.decode(enc)
+                    break
+                except UnicodeDecodeError:
+                    continue
+            if text is None:
+                text = data.decode("utf-8", errors="replace")
+            text = text.lstrip("\ufeff")  # strip BOM
+            if not text.strip():
+                continue
+            try:
+                return json.loads(text)
+            except json.JSONDecodeError:
+                continue
     return {}
 
 

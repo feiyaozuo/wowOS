@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>File Center – wowOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; padding: 1.5rem; }
+    a { color: #7eb8ff; }
+    .nav { margin-bottom: 1.5rem; }
+    .nav a { margin-right: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .hint { opacity: .8; font-size: 0.9rem; margin-top: 0.5rem; }
+    .err { color: #f88; }
+    .upload { background: #16213e; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; }
+    .upload input[type="file"], .upload select, .upload button { margin-right: 0.5rem; margin-top: 0.25rem; }
+    .upload button { padding: 0.4rem 0.8rem; cursor: pointer; background: #3d5a80; color: #eee; border: none; border-radius: 6px; }
+    .upload button:hover { background: #4d6a90; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 0.6rem; text-align: left; border-bottom: 1px solid #2a2b4e; }
+    th { color: #8a9bb0; font-weight: 600; }
+    .act { white-space: nowrap; }
+    .act a, .act button { margin-right: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.85rem; }
+    .act button { background: #5a2a2a; color: #fcc; border: none; border-radius: 4px; cursor: pointer; }
+    .act button:hover { background: #6a3a3a; }
+    .level { display: inline-block; padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.85rem; }
+    .level-1 { background: #1e3a2e; }
+    .level-2 { background: #4a3a1e; }
+    .level-3 { background: #4a1e1e; }
+    #detailModal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 10; align-items: center; justify-content: center; }
+    #detailModal.show { display: flex; }
+    #detailModal .box { background: #16213e; padding: 1.5rem; border-radius: 12px; max-width: 90%; max-height: 80vh; overflow: auto; }
+    #detailModal .box h3 { margin-top: 0; }
+    #detailModal .box dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 1rem; }
+    #detailModal .box dt { color: #8a9bb0; }
+    #detailModal .box .close { margin-top: 1rem; padding: 0.4rem 0.8rem; cursor: pointer; background: #3d5a80; color: #eee; border: none; border-radius: 6px; }
+    .filter { margin-bottom: 1rem; }
+    .filter input { padding: 0.4rem; background: #16213e; border: 1px solid #2a2b4e; color: #eee; border-radius: 6px; width: 200px; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a href="/">← Home</a> <a href="/settings">Settings</a></div>
+  <h1>File Center</h1>
+  <p class="hint">Upload, list, and manage files. Set token in Settings to access.</p>
+
+  <div class="upload">
+    <h3 style="margin-top:0;">Upload</h3>
+    <form id="uploadForm">
+      <input type="file" name="file" id="fileInput" required />
+      <label>Level: <select name="privacy_level" id="uploadLevel">
+        <option value="1">L1 Normal</option>
+        <option value="2">L2 Sensitive</option>
+        <option value="3" selected>L3 High</option>
+      </select></label>
+      <button type="submit">Upload</button>
+    </form>
+    <p id="uploadErr" class="err" style="display:none;"></p>
+  </div>
+
+  <div class="filter">
+    <label>Filter by name: <input type="text" id="filterName" placeholder="type to filter..." /></label>
+  </div>
+
+  <table>
+    <thead>
+      <tr><th>Name</th><th>Level</th><th>Tags</th><th>Size</th><th>Created</th><th>Actions</th></tr>
+    </thead>
+    <tbody id="list"></tbody>
+  </table>
+  <p id="err" class="err" style="display:none;"></p>
+
+  <div id="detailModal">
+    <div class="box">
+      <h3 id="detailTitle">File detail</h3>
+      <dl id="detailBody"></dl>
+      <button class="close" id="detailClose">Close</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

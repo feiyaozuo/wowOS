@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>App Center – wowOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; padding: 1.5rem; }
+    a { color: #7eb8ff; }
+    .nav { margin-bottom: 1.5rem; }
+    .nav a { margin-right: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .section { margin-top: 1.5rem; }
+    .section h2 { font-size: 1.1rem; opacity: .9; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 0.75rem; background: #16213e; margin: 0.5rem 0; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+    .err { color: #f88; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a href="/">← Home</a></div>
+  <h1>App Center</h1>
+  <div class="section">
+    <h2>Available apps</h2>
+    <ul id="available"></ul>
+    <p id="avail-err" class="err" style="display:none;"></p>
+  </div>
+  <div class="section">
+    <h2>Installed (from API when available)</h2>
+    <ul id="installed"></ul>
+  </div>
+  <script>
+    const acBase = '/api/app-center';
+    fetch(acBase + '/apps.json').then(r => r.json()).then(d => {
+      const ul = document.getElementById('available');
+      (d.apps || []).forEach(a => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span><strong>${a.name || a.id}</strong> ${a.version || ''}</span><span>${a.description || ''}</span>`;
+        ul.appendChild(li);
+      });
+      if (!(d.apps && d.apps.length)) ul.innerHTML = '<li>No apps in catalog.</li>';
+    }).catch(e => {
+      document.getElementById('avail-err').style.display = 'block';
+      document.getElementById('avail-err').textContent = 'Could not load app list: ' + e.message;
+    });
+    document.getElementById('installed').innerHTML = '<li>Install status: use App Manager API when integrated.</li>';
+  </script>
+</body>
+</html>

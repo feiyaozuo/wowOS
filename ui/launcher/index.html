@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>wowOS Home</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; }
+    h1 { font-size: 2rem; margin-bottom: 2rem; font-weight: 600; }
+    .cards { display: flex; flex-wrap: wrap; gap: 1.5rem; justify-content: center; max-width: 900px; }
+    .card { display: block; width: 220px; padding: 2rem 1.5rem; background: #16213e; border-radius: 16px; text-decoration: none; color: inherit; text-align: center; transition: transform .15s, box-shadow .15s; border: 1px solid #0f3460; }
+    .card:hover, .card:focus { transform: scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,.4); }
+    .card .icon { font-size: 3rem; margin-bottom: 0.5rem; }
+    .card .label { font-size: 1.25rem; font-weight: 600; }
+    .card .hint { font-size: 0.85rem; opacity: .8; margin-top: 0.25rem; }
+    .status { margin-top: 2rem; font-size: 0.9rem; opacity: .7; }
+  </style>
+</head>
+<body>
+  <h1>wowOS</h1>
+  <div class="cards">
+    <a class="card" href="/app-center">
+      <span class="icon">📦</span>
+      <div class="label">App Center</div>
+      <div class="hint">Browse and manage apps</div>
+    </a>
+    <a class="card" href="/file-center">
+      <span class="icon">📁</span>
+      <div class="label">File Center</div>
+      <div class="hint">Upload, view and manage files</div>
+    </a>
+    <a class="card" href="/home">
+      <span class="icon">🏠</span>
+      <div class="label">Home Assistant</div>
+      <div class="hint">Connect and control smart home</div>
+    </a>
+    <a class="card" href="/llm">
+      <span class="icon">🤖</span>
+      <div class="label">LLM Validate</div>
+      <div class="hint">Controlled external model calls</div>
+    </a>
+    <a class="card" href="/settings">
+      <span class="icon">⚙️</span>
+      <div class="label">Settings</div>
+      <div class="hint">Token and device status</div>
+    </a>
+  </div>
+  <div class="status" id="status">Backend: checking…</div>
+  <script>
+    fetch('/api/proxy/health').then(r => r.json()).then(d => {
+      document.getElementById('status').textContent = d.status === 'ok' ? 'Backend: connected' : 'Backend: unknown';
+    }).catch(() => {
+      document.getElementById('status').textContent = 'Backend: not reachable';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+[Unit]
+Description=wowOS App Center (static server for apps.json and .wapp packages)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/wowos/app_center
+ExecStart=/usr/bin/python3 -m http.server 8000 --bind 0.0.0.0
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

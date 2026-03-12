@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Home Assistant – wowOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; padding: 1.5rem; }
+    a { color: #7eb8ff; }
+    .nav { margin-bottom: 1.5rem; }
+    .nav a { margin-right: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .hint { opacity: .8; font-size: 0.9rem; margin-top: 0.5rem; }
+    .card { background: #16213e; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+    .card label { display: block; margin-bottom: 0.25rem; }
+    .card input { width: 100%; max-width: 400px; padding: 0.5rem; background: #0f111a; border: 1px solid #2a2b4e; color: #eee; border-radius: 6px; }
+    .card button { padding: 0.5rem 1rem; margin-right: 0.5rem; margin-top: 0.5rem; cursor: pointer; background: #3d5a80; color: #eee; border: none; border-radius: 6px; }
+    .card button:hover { background: #4d6a90; }
+    .err { color: #f88; }
+    .ok { color: #8f8; }
+    ul { list-style: none; padding: 0; }
+    li { padding: 0.6rem; background: #0f111a; margin: 0.25rem 0; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+    li .state { opacity: .9; font-size: 0.9rem; }
+    li button { padding: 0.3rem 0.6rem; font-size: 0.85rem; cursor: pointer; background: #2a4a6a; color: #eee; border: none; border-radius: 4px; }
+    li button:hover { background: #3a5a7a; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a href="/">← Home</a></div>
+  <h1>Home Assistant</h1>
+  <p class="hint">Enter your Home Assistant URL and long-lived access token to connect.</p>
+
+  <div class="card">
+    <label>HA URL (e.g. http://homeassistant.local:8123)</label>
+    <input type="text" id="haUrl" placeholder="http://192.168.1.10:8123" />
+    <label>Access Token</label>
+    <input type="password" id="haToken" placeholder="Long-lived access token" />
+    <button id="btnConnect">Test connection</button>
+    <span id="connectResult"></span>
+  </div>
+
+  <div class="card">
+    <button id="btnLoad">Load entities</button>
+    <ul id="entityList"></ul>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

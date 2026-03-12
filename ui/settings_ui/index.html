@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Settings – wowOS</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: #1a1b2e; color: #eee; min-height: 100vh; padding: 1.5rem; }
+    a { color: #7eb8ff; }
+    .nav { margin-bottom: 1.5rem; }
+    .nav a { margin-right: 1rem; }
+    h1 { font-size: 1.5rem; }
+    .block { margin-top: 1.5rem; padding: 1rem; background: #16213e; border-radius: 8px; max-width: 600px; }
+    .block h2 { font-size: 1rem; margin-top: 0; }
+    pre { margin: 0; font-size: 0.85rem; overflow: auto; }
+    .hint { font-size: 0.85rem; opacity: .8; margin-top: 0.25rem; }
+    .ok { color: #8f8; }
+    .fail { color: #f88; }
+  </style>
+</head>
+<body>
+  <div class="nav"><a href="/">← Home</a></div>
+  <h1>Settings</h1>
+  <div class="block">
+    <h2>wowOS API status</h2>
+    <pre id="api-status">Checking…</pre>
+  </div>
+  <div class="block">
+    <h2>API Token (for File Center / API calls)</h2>
+    <p><input type="password" id="token" placeholder="Bearer token" style="width:100%;max-width:400px;padding:0.5rem;" /> <button type="button" id="save-token">Save</button></p>
+    <p class="hint">Token is stored in this browser only. Get one via admin: POST /api/v1/tokens with admin token.</p>
+  </div>
+  <div class="block">
+    <h2>Device / environment</h2>
+    <pre id="env">User-Agent and basic info only (no server-side env exposed).</pre>
+  </div>
+  <script>
+    var t = document.getElementById('token');
+    var saved = localStorage.getItem('wowos_token');
+    if (saved) t.placeholder = '(saved)';
+    document.getElementById('save-token').onclick = function(){ localStorage.setItem('wowos_token', t.value); t.value=''; t.placeholder='(saved)'; };
+  </script>
+  <script>
+    fetch('/api/proxy/health')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('api-status').textContent = JSON.stringify(d, null, 2);
+        document.getElementById('api-status').className = d.status === 'ok' ? 'ok' : 'fail';
+      })
+      .catch(() => {
+        document.getElementById('api-status').textContent = 'Unreachable';
+        document.getElementById('api-status').className = 'fail';
+      });
+    document.getElementById('env').textContent = 'UA: ' + navigator.userAgent + '\nPlatform: ' + navigator.platform;
+  </script>
+</body>
+</html>
