@@ -1,6 +1,5 @@
 """LLM gateway: controlled external call to DeepSeek/Kimi (OpenAI-compatible). Audit and optional redact."""
 import os
-import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -23,23 +22,16 @@ def _load_providers() -> dict:
     return data.get("providers") or {}
 
 
-def _resolve_api_key(raw: str) -> str:
-    if not raw:
-        return ""
-    m = re.match(r"^\$\{(.+)\}$", str(raw).strip())
-    if m:
-        return os.environ.get(m.group(1), "")
-    return raw
-
-
 def get_provider(provider_id: str) -> Optional[Dict[str, Any]]:
-    """Return provider config with api_key resolved from env."""
+    """Return provider config with api_key resolved from env via api_key_env."""
     providers = _load_providers()
     cfg = providers.get(provider_id)
     if not cfg:
         return None
     cfg = dict(cfg)
-    cfg["api_key"] = _resolve_api_key(cfg.get("api_key") or "")
+    env_name = cfg.get("api_key_env") or ""
+    api_key = os.environ.get(env_name, "") if env_name else ""
+    cfg["api_key"] = api_key
     return cfg
 
 

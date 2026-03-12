@@ -48,12 +48,20 @@ class FileManager:
         """
         )
         self.conn.execute("CREATE INDEX IF NOT EXISTS idx_owner ON files(owner)")
-        for col, ctype in [("category", "TEXT"), ("updated_at", "INTEGER"), ("source", "TEXT")]:
-            try:
-                self.conn.execute(f"ALTER TABLE files ADD COLUMN {col} {ctype}")
-            except Exception:
-                pass
+        self._migrate_files_schema()
         self.conn.commit()
+
+    def _migrate_files_schema(self) -> None:
+        """Ensure new metadata columns exist using PRAGMA table_info (idempotent)."""
+        cols = [row[1] for row in self.conn.execute("PRAGMA table_info(files)").fetchall()]
+
+        def ensure(col: str, col_def: str) -> None:
+            if col not in cols:
+                self.conn.execute(f"ALTER TABLE files ADD COLUMN {col} {col_def}")
+
+        ensure("category", "TEXT")
+        ensure("updated_at", "INTEGER")
+        ensure("source", "TEXT")
 
     def _generate_file_id(self) -> str:
         return "file_" + uuid4().hex[:16]
@@ -135,27 +143,12 @@ class FileManager:
 
     def list_files(self) -> list:
         """Return list of file metadata (file_id, name, level, tags, created_at, updated_at, size, etc.)."""
-        try:
-            rows = self.conn.execute(
-                "SELECT file_id, name, privacy_level, owner, tags, created_at, size, checksum FROM files ORDER BY created_at DESC"
-            ).fetchall()
-            has_extra = False
-        except Exception:
-            rows = self.conn.execute(
-                "SELECT file_id, name, privacy_level, owner, category, tags, created_at, updated_at, size, checksum, source FROM files ORDER BY created_at DESC"
-            ).fetchall()
-            has_extra = True
+        rows = self.conn.execute(
+            "SELECT file_id, name, privacy_level, owner, category, tags, created_at, updated_at, size, checksum, source FROM files ORDER BY created_at DESC"
+        ).fetchall()
         out = []
         for r in rows:
-            if has_extra and len(r) >= 11:
-                tags_raw, created_at, updated_at, size, checksum, source = r[5], r[6], r[7], r[8], r[9], r[10]
-                category = r[4]
-            else:
-                tags_raw, created_at = r[5], r[6]
-                size = r[7] if len(r) > 7 else None
-                checksum = r[8] if len(r) > 8 else None
-                updated_at, source, category = created_at, None, None
-            tags = tags_raw
+            tags = r[5]
             if isinstance(tags, str):
                 try:
                     tags = json.loads(tags) if tags else []
@@ -167,40 +160,25 @@ class FileManager:
                 "privacy_level": r[2],
                 "level": r[2],
                 "owner": r[3],
-                "category": category,
+                "category": r[4],
                 "tags": tags or [],
-                "created_at": created_at,
-                "updated_at": updated_at or created_at,
-                "size": size,
-                "checksum": checksum,
-                "source": source,
+                "created_at": r[6],
+                "updated_at": r[7] or r[6],
+                "size": r[8],
+                "checksum": r[9],
+                "source": r[10],
             })
         return out
 
     def get_metadata(self, file_id: str) -> Optional[dict]:
         """Return metadata for one file without reading content."""
-        try:
-            row = self.conn.execute(
-                "SELECT file_id, name, privacy_level, owner, tags, created_at, size, checksum FROM files WHERE file_id = ?",
-                (file_id,),
-            ).fetchone()
-            has_extra = False
-        except Exception:
-            row = self.conn.execute(
-                "SELECT file_id, name, privacy_level, owner, category, tags, created_at, updated_at, size, checksum, source FROM files WHERE file_id = ?",
-                (file_id,),
-            ).fetchone()
-            has_extra = True
+        row = self.conn.execute(
+            "SELECT file_id, name, privacy_level, owner, category, tags, created_at, updated_at, size, checksum, source FROM files WHERE file_id = ?",
+            (file_id,),
+        ).fetchone()
         if not row:
             return None
-        if has_extra and len(row) >= 11:
-            category, tags_raw, created_at, updated_at, size, checksum, source = row[4], row[5], row[6], row[7], row[8], row[9], row[10]
-        else:
-            tags_raw, created_at = row[5], row[6]
-            size = row[7] if len(row) > 7 else None
-            checksum = row[8] if len(row) > 8 else None
-            category, updated_at, source = None, created_at, None
-        tags = tags_raw
+        tags = row[5]
         if isinstance(tags, str):
             try:
                 tags = json.loads(tags) if tags else []
@@ -212,13 +190,13 @@ class FileManager:
             "privacy_level": row[2],
             "level": row[2],
             "owner": row[3],
-            "category": category,
+            "category": row[4],
             "tags": tags or [],
-            "created_at": created_at,
-            "updated_at": updated_at or created_at,
-            "size": size,
-            "checksum": checksum,
-            "source": source,
+            "created_at": row[6],
+            "updated_at": row[7] or row[6],
+            "size": row[8],
+            "checksum": row[9],
+            "source": row[10],
         }
 
     def update_metadata(self, file_id: str, level: int = None, tags: list = None, category: str = None) -> bool:
