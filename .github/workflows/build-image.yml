@@ -27,12 +27,12 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y wget zip xz-utils file kpartx util-linux
+          sudo apt-get install -y wget curl zip xz-utils file kpartx util-linux
 
       - name: Build image (prepare-only)
         run: |
           mkdir -p "$BUILD_DIR"
-          sudo -E BUILD_DIR="$BUILD_DIR" WOWOS_VERSION="$WOWOS_VERSION" \
+          sudo -E BUILD_DIR="$BUILD_DIR" WOWOS_VERSION="$WOWOS_VERSION" GITHUB_ACTIONS="$GITHUB_ACTIONS" \
             bash "${{ github.workspace }}/scripts/build_image_prepare_only.sh"
           sudo chown -R "$USER:$USER" "$BUILD_DIR"
 
