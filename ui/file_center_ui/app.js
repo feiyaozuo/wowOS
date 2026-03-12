@@ -67,7 +67,7 @@
     }
     document.getElementById('err').style.display = 'none';
     api('files').then(function (d) {
-      allItems = d.items || [];
+      allItems = d.files || d.items || [];
       renderList(allItems);
     }).catch(function (e) {
       document.getElementById('err').style.display = 'block';

@@ -131,18 +131,16 @@ def list_files():
     if not TokenService.verify_token(token, "file/*", 0, "read"):
         return jsonify({"error": "Unauthorized"}), 403
     items = file_manager.list_files()
-    return jsonify({"items": items}), 200
+    return jsonify({"items": items, "files": items}), 200
 
 
-@app.route("/api/v1/files", methods=["POST"])
-def upload_file():
+def _upload_file_impl():
+    """Shared upload logic for POST /api/v1/files and POST /api/v1/files/upload."""
     token = _auth_token()
     if not token:
         return jsonify({"error": "Missing token"}), 401
-
     if not request.files.get("file"):
         return jsonify({"error": "No file"}), 400
-
     f = request.files["file"]
     data = f.read()
     name = f.filename or "unnamed"
@@ -155,7 +153,6 @@ def upload_file():
             tags = []
     else:
         tags = []
-
     resource_wildcard = "file/*"
     if not TokenService.verify_token(token, resource_wildcard, privacy_level, "write"):
         audit_logger.log({
@@ -164,11 +161,9 @@ def upload_file():
             "result": "unauthorized",
         })
         return jsonify({"error": "Unauthorized"}), 403
-
     payload = TokenService.decode_payload(token)
     user_id = payload.get("user_id") if payload else None
     owner = str(user_id) if user_id else None
-
     metadata = {
         "name": name,
         "privacy_level": privacy_level,
@@ -176,7 +171,6 @@ def upload_file():
         "tags": tags,
     }
     file_id = file_manager.store_file(data, metadata)
-    payload = TokenService.decode_payload(token)
     audit_logger.log({
         "event_type": "file_upload",
         "user_id": payload.get("user_id") if payload else None,
@@ -185,6 +179,17 @@ def upload_file():
         "result": "success",
     })
     return jsonify({"file_id": file_id}), 200
+
+
+@app.route("/api/v1/files", methods=["POST"])
+def upload_file():
+    return _upload_file_impl()
+
+
+@app.route("/api/v1/files/upload", methods=["POST"])
+def upload_file_upload():
+    """Alias for POST /api/v1/files; document-recommended path."""
+    return _upload_file_impl()
 
 
 @app.route("/api/v1/files/<file_id>", methods=["DELETE"])

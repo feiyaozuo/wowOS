@@ -13,6 +13,12 @@ level_3_to_1:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
     replace: 'ID: ********'
+  - type: text
+    pattern: '地址[:：]\s*[\u4e00-\u9fa5\d\s\-省市区县路弄号]+'
+    replace: '地址: ***'
+  - type: text
+    pattern: '姓名[:：]\s*[\u4e00-\u9fa5]{2,4}'
+    replace: '姓名: ***'
 level_3_to_2:
   - type: text
     pattern: '身份证号[:：]\s*(\d{18}|\d{17}X)'
@@ -27,6 +33,12 @@ level_2_to_1:
   - type: text
     pattern: '[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+'
     replace: '***EMAIL***'
+  - type: text
+    pattern: '地址[:：]\s*[\u4e00-\u9fa5\d\s\-省市区县路弄号]+'
+    replace: '地址: ***'
+  - type: text
+    pattern: '姓名[:：]\s*[\u4e00-\u9fa5]{2,4}'
+    replace: '姓名: ***'
 # Legacy keys for backward compatibility
 level_4_to_2:
   - type: text
