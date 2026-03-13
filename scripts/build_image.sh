@@ -67,6 +67,10 @@ fi
 mount --bind /dev /mnt/wowos/dev
 mount --bind /proc /mnt/wowos/proc
 mount --bind /sys /mnt/wowos/sys
+# Use host-side apt cache dir so the image rootfs is not filled (CI has limited space in image)
+APT_CACHE="${BUILD_DIR}/.apt-cache"
+mkdir -p /mnt/wowos/var/cache/apt/archives "$APT_CACHE"
+mount --bind "$APT_CACHE" /mnt/wowos/var/cache/apt/archives
 chroot /mnt/wowos apt-get update
 chroot /mnt/wowos apt-get install -y \
   python3 python3-pip python3-venv sqlite3 \
@@ -146,6 +150,9 @@ chroot /mnt/wowos systemctl enable wowos-kiosk.service
 chroot /mnt/wowos systemctl set-default graphical.target
 
 # 10. Unmount and detach loop device (handle both direct loop partitions and kpartx mappers)
+umount /mnt/wowos/var/cache/apt/archives 2>/dev/null || true
+rm -rf "${BUILD_DIR}/.apt-cache" 2>/dev/null || true
+umount /mnt/wowos/dev /mnt/wowos/proc /mnt/wowos/sys 2>/dev/null || true
 umount /mnt/wowos/boot /mnt/wowos
 if [ -b "${LOOP_DEV}p2" ]; then
   losetup -d "$LOOP_DEV"
