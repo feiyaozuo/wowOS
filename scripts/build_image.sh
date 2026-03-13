@@ -37,9 +37,11 @@ fi
 
 # 1b. Expand image file so root partition can be resized (avoids "No space left on device" during apt install)
 IMG_SIZE_MB=$(($(stat -c%s "$IMG_NAME" 2>/dev/null || stat -f%z "$IMG_NAME") / 1024 / 1024))
-if [ "$IMG_SIZE_MB" -lt 5500 ]; then
-  echo "[wowOS] Expanding image to 6GB for desktop package install (current ${IMG_SIZE_MB}MB)"
-  truncate -s 6G "$IMG_NAME"
+NEED_RESIZE=0
+if [ "$IMG_SIZE_MB" -lt 7500 ]; then
+  NEED_RESIZE=1
+  echo "[wowOS] Expanding image to 8GB for desktop package install (current ${IMG_SIZE_MB}MB)"
+  truncate -s 8G "$IMG_NAME"
 fi
 
 # 2. Attach image to loop device and mount partitions (works with or without partition suffixes)
@@ -51,27 +53,31 @@ if [ -z "$LOOP_DEV" ] || [ ! -b "$LOOP_DEV" ]; then
 fi
 
 # 2a. Resize partition 2 to use full image and grow root filesystem (if we expanded the image)
-if [ "$IMG_SIZE_MB" -lt 5500 ]; then
-  echo "[wowOS] Resizing root partition and filesystem"
-  parted -s "$LOOP_DEV" resizepart 2 100% || true
+if [ "$NEED_RESIZE" = "1" ]; then
+  echo "[wowOS] Resizing root partition to 100%"
+  parted -s "$LOOP_DEV" resizepart 2 100%
   partprobe "$LOOP_DEV" 2>/dev/null || true
-  if [ ! -b "${LOOP_DEV}p2" ]; then
-    kpartx -uv "$LOOP_DEV" 2>/dev/null || true
-  fi
-  sleep 1
+  blockdev --rereadpt "$LOOP_DEV" 2>/dev/null || true
+  sleep 2
 fi
 
 mkdir -p /mnt/wowos
 if [ -b "${LOOP_DEV}p2" ]; then
-  [ "$IMG_SIZE_MB" -lt 5500 ] && resize2fs "${LOOP_DEV}p2" 2>/dev/null || true
+  if [ "$NEED_RESIZE" = "1" ]; then
+    echo "[wowOS] Growing root filesystem (loop p2)"
+    resize2fs "${LOOP_DEV}p2"
+  fi
   mount "${LOOP_DEV}p2" /mnt/wowos
   mount "${LOOP_DEV}p1" /mnt/wowos/boot
 else
   # Fallback: use kpartx mapper devices (e.g. /dev/mapper/loop0p1)
   kpartx -av "$LOOP_DEV"
   MAPPER=$(basename "$LOOP_DEV")
-  sleep 1
-  [ "$IMG_SIZE_MB" -lt 5500 ] && resize2fs /dev/mapper/${MAPPER}p2 2>/dev/null || true
+  sleep 2
+  if [ "$NEED_RESIZE" = "1" ]; then
+    echo "[wowOS] Growing root filesystem (mapper)"
+    resize2fs /dev/mapper/${MAPPER}p2
+  fi
   mount /dev/mapper/${MAPPER}p2 /mnt/wowos
   mount /dev/mapper/${MAPPER}p1 /mnt/wowos/boot
 fi
@@ -92,6 +98,8 @@ mount --bind /sys /mnt/wowos/sys
 APT_CACHE="${BUILD_DIR}/.apt-cache"
 mkdir -p /mnt/wowos/var/cache/apt/archives "$APT_CACHE"
 mount --bind "$APT_CACHE" /mnt/wowos/var/cache/apt/archives
+echo "[wowOS] Root fs free space before apt:"
+df -h /mnt/wowos
 chroot /mnt/wowos apt-get update
 chroot /mnt/wowos apt-get install -y \
   python3 python3-pip python3-venv sqlite3 \
