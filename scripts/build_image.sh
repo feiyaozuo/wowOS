@@ -38,10 +38,10 @@ fi
 # 1b. Expand image file so root partition can be resized (avoids "No space left on device" during apt install)
 IMG_SIZE_MB=$(($(stat -c%s "$IMG_NAME" 2>/dev/null || stat -f%z "$IMG_NAME") / 1024 / 1024))
 NEED_RESIZE=0
-if [ "$IMG_SIZE_MB" -lt 7500 ]; then
+if [ "$IMG_SIZE_MB" -lt 11500 ]; then
   NEED_RESIZE=1
-  echo "[wowOS] Expanding image to 8GB for desktop package install (current ${IMG_SIZE_MB}MB)"
-  truncate -s 8G "$IMG_NAME"
+  echo "[wowOS] Expanding image to 12GB for desktop + dependencies (current ${IMG_SIZE_MB}MB)"
+  truncate -s 12G "$IMG_NAME"
 fi
 
 # 2. Attach image to loop device and mount partitions (works with or without partition suffixes)
@@ -55,10 +55,22 @@ fi
 # 2a. Resize partition 2 to use full image and grow root filesystem (if we expanded the image)
 if [ "$NEED_RESIZE" = "1" ]; then
   echo "[wowOS] Resizing root partition to 100%"
-  parted -s "$LOOP_DEV" resizepart 2 100%
+  for attempt in 1 2 3; do
+    if parted -s "$LOOP_DEV" resizepart 2 100%; then
+      echo "[wowOS] Partition resized successfully"
+      break
+    fi
+    if [ "$attempt" -lt 3 ]; then
+      echo "[wowOS] Parted retry $attempt/3..."
+      sleep 2
+    else
+      echo "[wowOS] ERROR: parted resizepart failed after 3 attempts"
+      exit 1
+    fi
+  done
   partprobe "$LOOP_DEV" 2>/dev/null || true
   blockdev --rereadpt "$LOOP_DEV" 2>/dev/null || true
-  sleep 2
+  sleep 3
 fi
 
 mkdir -p /mnt/wowos
@@ -100,6 +112,13 @@ mkdir -p /mnt/wowos/var/cache/apt/archives "$APT_CACHE"
 mount --bind "$APT_CACHE" /mnt/wowos/var/cache/apt/archives
 echo "[wowOS] Root fs free space before apt:"
 df -h /mnt/wowos
+FREE_KB=$(df /mnt/wowos | awk 'NR==2 {print $4}')
+echo "[wowOS] Free space available: ${FREE_KB}KB ($((FREE_KB/1024))MB)"
+REQUIRED_KB=$((3 * 1024 * 1024))
+if [ "$FREE_KB" -lt "$REQUIRED_KB" ]; then
+  echo "[wowOS] ERROR: Not enough free space! Need at least 3GB, have $((FREE_KB/1024))MB"
+  exit 1
+fi
 chroot /mnt/wowos apt-get update
 chroot /mnt/wowos apt-get install -y \
   python3 python3-pip python3-venv sqlite3 \
