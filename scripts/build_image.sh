@@ -57,7 +57,9 @@ fi
 
 # 2b. When building on x86_64 (e.g. CI), copy qemu into chroot so arm64 binaries run via emulation
 if [ -f /usr/bin/qemu-aarch64-static ]; then
-  cp /usr/bin/qemu-aarch64-static /mnt/wowos/usr/bin/
+  echo "[wowOS] Copying qemu-aarch64-static into chroot for arm64 emulation"
+  mkdir -p /mnt/wowos/usr/bin
+  cp -f /usr/bin/qemu-aarch64-static /mnt/wowos/usr/bin/
   chmod 755 /mnt/wowos/usr/bin/qemu-aarch64-static
 fi
 

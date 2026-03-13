@@ -24,6 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up QEMU (host binfmt for arm64)
+        uses: docker/setup-qemu-action@v3
+
       - name: Build image (full build, in Docker for loop/mount)
         run: |
           mkdir -p "$BUILD_DIR"
@@ -36,10 +39,10 @@ jobs:
             ubuntu:22.04 \
             bash -c '
               set -e
-              # Tools: image handling + qemu-user-static so we can chroot into arm64 raspios
               apt-get update -qq && apt-get install -y -qq \
                 wget curl zip xz-utils file kpartx util-linux \
                 qemu-user-static binfmt-support
+              update-binfmts --enable qemu-aarch64 || true
               BUILD_DIR=/wowos/build IMG_NAME=raspios-lite.img WOWOS_VERSION="$WOWOS_VERSION" \
                 bash /wowos/scripts/build_image.sh
             '
