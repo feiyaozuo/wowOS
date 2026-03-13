@@ -1,0 +1,16 @@
+[Unit]
+Description=wowOS Kiosk Browser
+After=graphical.target wowos-desktop.service
+Wants=wowos-desktop.service
+
+[Service]
+Type=simple
+User=admin
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/admin/.Xauthority
+ExecStart=/opt/wowos/scripts/start_kiosk.sh
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical.target

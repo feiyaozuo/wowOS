@@ -67,17 +67,17 @@ docker run --rm --privileged \
     mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
     ln -sf ../wowos-desktop.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-desktop.service 2>/dev/null || true
     touch /mnt/wowos/boot/ssh
-    mkdir -p /mnt/wowos/usr/local/bin
-    cp /wowos/scripts/firstboot_wizard.sh /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
-    chmod +x /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
-    cp /wowos/scripts/install_desktop_firstboot.sh /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot
-    if [ ! -f /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot ] || [ ! -s /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot ]; then
-      echo "[wowOS] WARN: install_desktop_firstboot.sh not copied." >&2
-    fi
-    chmod +x /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+    # 方案2：桌面与 kiosk — 脚本放到 /opt/wowos/scripts/
+    mkdir -p /mnt/wowos/opt/wowos/scripts
+    cp /wowos/scripts/install_desktop_once.sh /mnt/wowos/opt/wowos/scripts/
+    cp /wowos/scripts/start_kiosk.sh /mnt/wowos/opt/wowos/scripts/
+    chmod +x /mnt/wowos/opt/wowos/scripts/install_desktop_once.sh /mnt/wowos/opt/wowos/scripts/start_kiosk.sh
     cp /wowos/services/wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/
+    cp /wowos/services/wowos-kiosk.service /mnt/wowos/etc/systemd/system/
     mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
     ln -sf ../wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-install-desktop-once.service 2>/dev/null || true
+    mkdir -p /mnt/wowos/etc/systemd/system/graphical.target.wants
+    ln -sf ../wowos-kiosk.service /mnt/wowos/etc/systemd/system/graphical.target.wants/wowos-kiosk.service 2>/dev/null || true
     mkdir -p /mnt/wowos/root
     cat > /mnt/wowos/root/wowos-firstboot-install.sh << "EOF"
 #!/bin/bash

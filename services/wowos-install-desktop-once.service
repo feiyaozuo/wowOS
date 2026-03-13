@@ -2,14 +2,12 @@
 Description=wowOS install desktop once on first boot
 After=network-online.target
 Wants=network-online.target
+ConditionPathExists=!/var/lib/wowos/.desktop_installed
 
 [Service]
 Type=oneshot
+ExecStart=/opt/wowos/scripts/install_desktop_once.sh
 RemainAfterExit=yes
-ConditionPathExists=!/var/lib/wowos/desktop-installed
-ExecStart=/usr/local/bin/wowos-install-desktop-firstboot
-StandardOutput=journal
-StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

@@ -81,18 +81,15 @@ docker run --rm --privileged \
     # 8. SSH
     touch /mnt/wowos/boot/ssh
 
-    # 9. First-boot script
-    mkdir -p /mnt/wowos/usr/local/bin
-    cp /wowos/scripts/firstboot_wizard.sh /mnt/wowos/usr/local/bin/wowos-firstboot 2>/dev/null || true
-    chroot /mnt/wowos chmod +x /usr/local/bin/wowos-firstboot 2>/dev/null || true
-    # 9b. Install desktop once on first boot
-    cp /wowos/scripts/install_desktop_firstboot.sh /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot
-    if [ ! -f /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot ] || [ ! -s /mnt/wowos/usr/local/bin/wowos-install-desktop-firstboot ]; then
-      echo "[wowOS] WARN: install_desktop_firstboot.sh not copied." >&2
-    fi
-    chroot /mnt/wowos chmod +x /usr/local/bin/wowos-install-desktop-firstboot 2>/dev/null || true
+    # 9b. 方案2：桌面与 kiosk — 脚本放到 /opt/wowos/scripts/
+    mkdir -p /mnt/wowos/opt/wowos/scripts
+    cp /wowos/scripts/install_desktop_once.sh /mnt/wowos/opt/wowos/scripts/
+    cp /wowos/scripts/start_kiosk.sh /mnt/wowos/opt/wowos/scripts/
+    chroot /mnt/wowos chmod +x /opt/wowos/scripts/install_desktop_once.sh /opt/wowos/scripts/start_kiosk.sh
     cp /wowos/services/wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/
+    cp /wowos/services/wowos-kiosk.service /mnt/wowos/etc/systemd/system/
     chroot /mnt/wowos systemctl enable wowos-install-desktop-once.service
+    chroot /mnt/wowos systemctl enable wowos-kiosk.service
 
     # 10. Unmount
     umount /mnt/wowos/dev /mnt/wowos/proc /mnt/wowos/sys
