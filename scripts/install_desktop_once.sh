@@ -33,9 +33,10 @@ apt-get install -y \
 echo "[4/7] ensure graphical target"
 systemctl set-default graphical.target
 
-echo "[5/7] ensure lightdm runtime dirs"
+echo "[5/7] ensure lightdm runtime dirs and enable"
 mkdir -p /var/lib/lightdm/data || true
 chown -R lightdm:lightdm /var/lib/lightdm || true
+systemctl enable lightdm.service || true
 
 echo "[6/7] enable services"
 systemctl enable wowos-api.service
