@@ -78,15 +78,6 @@ docker run --rm --privileged \
     ln -sf ../wowos-install-desktop-once.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-install-desktop-once.service 2>/dev/null || true
     mkdir -p /mnt/wowos/etc/systemd/system/graphical.target.wants
     ln -sf ../wowos-kiosk.service /mnt/wowos/etc/systemd/system/graphical.target.wants/wowos-kiosk.service 2>/dev/null || true
-    mkdir -p /mnt/wowos/root
-    cat > /mnt/wowos/root/wowos-firstboot-install.sh << "EOF"
-#!/bin/bash
-apt-get update && apt-get install -y python3 python3-pip sqlite3
-python3 -m pip install --break-system-packages flask pyjwt cryptography pyyaml requests
-systemctl start wowos-api
-echo "wowOS API running on port 8080."
-EOF
-    chmod +x /mnt/wowos/root/wowos-firstboot-install.sh
     umount /mnt/wowos/boot /mnt/wowos
     if [ -b "${LOOP_DEV}p2" ]; then
       losetup -d "$LOOP_DEV"
@@ -96,7 +87,7 @@ EOF
     fi
     rmdir /mnt/wowos 2>/dev/null || true
     zip -q /wowos/build/wowos-1.0.img.zip "$IMG_NAME"
-    echo "[wowOS] Done: build/wowos-1.0.img.zip (prepare-only)"
-    echo "[wowOS] After flash, on Pi run once: sudo /root/wowos-firstboot-install.sh"
+    echo "[wowOS] Done: build/wowos-1.0.img.zip (prepare-only, 方案2)"
+    echo "[wowOS] After flash: first boot runs wowos-install-desktop-once; reboot to enter graphical + kiosk."
   '
 echo "[wowOS] Image: $BUILD_DIR/wowos-1.0.img.zip"

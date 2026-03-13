@@ -1,9 +1,7 @@
 #!/bin/bash
-# Prepare-only image: mount, copy wowOS code, create user, configure systemd; no chroot apt-get.
-# Use when offline or when chroot cannot pull packages (e.g. in Docker). After flash, on Pi run once:
-#   sudo apt update && sudo apt install -y python3 python3-pip sqlite3
-#   sudo python3 -m pip install --break-system-packages flask pyjwt cryptography pyyaml requests
-# then systemctl start wowos-api
+# Prepare-only image (方案2): mount, copy wowOS code, scripts, services; no chroot apt-get.
+# First boot: wowos-install-desktop-once.service runs install_desktop_once.sh (lightdm/kiosk); then reboot to graphical.
+# Used by GitHub Actions and local Docker build.
 set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
@@ -118,18 +116,6 @@ fi
 mkdir -p /mnt/wowos/etc/systemd/system/graphical.target.wants
 ln -sf ../wowos-kiosk.service /mnt/wowos/etc/systemd/system/graphical.target.wants/wowos-kiosk.service 2>/dev/null || true
 
-# Write first-boot install-deps script
-mkdir -p /mnt/wowos/root
-cat > /mnt/wowos/root/wowos-firstboot-install.sh << 'INNER'
-#!/bin/bash
-# Run once as root on Pi after first boot
-apt-get update && apt-get install -y python3 python3-pip sqlite3
-python3 -m pip install --break-system-packages flask pyjwt cryptography pyyaml requests
-systemctl start wowos-api
-echo "wowOS API should be running on port 8080."
-INNER
-chmod +x /mnt/wowos/root/wowos-firstboot-install.sh
-
 umount /mnt/wowos/boot /mnt/wowos
 if [ -b "${LOOP_DEV}p2" ]; then
   losetup -d "$LOOP_DEV"
@@ -141,7 +127,6 @@ rmdir /mnt/wowos 2>/dev/null || true
 
 BUILD_OK=1
 zip -q "wowos-${WOWOS_VERSION}.img.zip" "$IMG_NAME"
-echo "[wowOS] Done: wowos-${WOWOS_VERSION}.img.zip (prepare-only)"
-echo "[wowOS] After flash, on the Pi run once: sudo /root/wowos-firstboot-install.sh"
-echo "[wowOS] Or install deps manually and: systemctl start wowos-api"
+echo "[wowOS] Done: wowos-${WOWOS_VERSION}.img.zip (prepare-only, 方案2)"
+echo "[wowOS] After flash: first boot runs wowos-install-desktop-once (lightdm/kiosk); reboot to enter graphical + Launcher."
 echo "[wowOS] For full build (with deps in image), run ./scripts/build_image.sh on Linux with internet."
