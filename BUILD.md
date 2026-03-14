@@ -141,15 +141,15 @@ It is the most common issue when the EEPROM boot order is set to try USB before 
 
 - Users:
   - `wowos` (API runs as this service user)
-  - `admin` (desktop session user, used by LightDM autologin)
+  - `admin` (desktop session user, used by LightDM autologin; member of `video` and `input` groups)
 - Dirs `/opt/wowos` (core), `/var/lib/wowos`, `/data` (data and audit)
 - All Python deps from `requirements.txt` preinstalled
-- Desktop stack preinstalled: `lightdm`, `xserver-xorg`, `xinit`, `openbox`, `chromium`, `unclutter`, `dbus-x11`, `x11-xserver-utils`, `fonts-wqy-microhei`, NetworkManager
+- Desktop stack preinstalled: `lightdm`, `xserver-xorg`, `xinit`, `openbox`, `xserver-xorg-input-libinput`, `xserver-xorg-video-fbdev`, `libgl1-mesa-dri`, `chromium`, `unclutter`, `dbus-x11`, `x11-xserver-utils`, `fonts-wqy-microhei`, NetworkManager
 - systemd services enabled on boot:
   - `wowos-api.service`
-  - `wowos-desktop.service`
-  - `wowos-kiosk.service`
+  - `wowos-desktop.service` (Flask desktop web server on port 9090)
+  - `wowos-kiosk.service` (Chromium kiosk, waits for X display and desktop server)
   - `lightdm` with graphical target as default
 - LightDM autologin for user `admin` into Openbox session
-- Openbox autostart launches wowOS kiosk (`start_kiosk.sh`)
+- Openbox autostart configures display power-management and cursor hiding
 - SSH enabled (boot partition contains `ssh` file)

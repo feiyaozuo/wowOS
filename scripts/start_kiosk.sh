@@ -1,19 +1,27 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-export DISPLAY=:0
-export XAUTHORITY=/home/admin/.Xauthority
+export DISPLAY="${DISPLAY:-:0}"
+export XAUTHORITY="${XAUTHORITY:-/home/admin/.Xauthority}"
 
 URL="http://127.0.0.1:9090"
 
-for i in $(seq 1 30); do
+# Wait for X display to become available (needed when launched from systemd
+# before LightDM has finished initialising the session).
+for _i in $(seq 1 60); do
+  if xset q >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
+
+# Wait for the desktop web server to be reachable.
+for _i in $(seq 1 30); do
   if curl -fsS "$URL" >/dev/null 2>&1; then
     break
   fi
   sleep 2
 done
-
-unclutter -idle 0.5 -root >/dev/null 2>&1 &
 
 exec chromium \
   --kiosk \
