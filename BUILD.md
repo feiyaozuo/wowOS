@@ -75,7 +75,7 @@ The GitHub workflow runs `scripts/build_image.sh` inside a privileged Docker con
   - `admin` (desktop session user, used by LightDM autologin)
 - Dirs `/opt/wowos` (core), `/var/lib/wowos`, `/data` (data and audit)
 - All Python deps from `requirements.txt` preinstalled
-- Desktop stack preinstalled: `lightdm`, `xserver-xorg`, `xinit`, `openbox`, `chromium`, `unclutter`, `dbus-x11`, `x11-xserver-utils`, fonts, NetworkManager
+- Desktop stack preinstalled: `lightdm`, `xserver-xorg`, `xinit`, `openbox`, `chromium`, `unclutter`, `dbus-x11`, `x11-xserver-utils`, `fonts-wqy-microhei`, NetworkManager
 - systemd services enabled on boot:
   - `wowos-api.service`
   - `wowos-desktop.service`

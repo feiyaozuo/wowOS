@@ -176,13 +176,15 @@ if [ "$FREE_KB" -lt "$REQUIRED_KB" ]; then
   exit 1
 fi
 chroot /mnt/wowos apt-get update
-chroot /mnt/wowos apt-get install -y \
+chroot /mnt/wowos apt-get install -y --no-install-recommends \
   python3 python3-pip python3-venv sqlite3 \
   lightdm xserver-xorg xinit openbox \
   chromium unclutter \
   dbus-x11 x11-xserver-utils \
   network-manager \
-  fonts-noto fonts-noto-cjk
+  fonts-wqy-microhei
+chroot /mnt/wowos apt-get clean
+chroot /mnt/wowos rm -rf /var/lib/apt/lists/*
 
 # 4. Create wowos service user/group (API runs as this user) and desktop user
 chroot /mnt/wowos groupadd -r wowos 2>/dev/null || true
@@ -199,7 +201,7 @@ chroot /mnt/wowos chown -R wowos:wowos /opt/wowos
 
 # 5b. Install Python dependencies from requirements.txt inside the image
 if [ -f "$PROJECT_ROOT/requirements.txt" ]; then
-  chroot /mnt/wowos python3 -m pip install --break-system-packages -r /opt/wowos/requirements.txt
+  chroot /mnt/wowos python3 -m pip install --break-system-packages --no-cache-dir -r /opt/wowos/requirements.txt
 fi
 
 # 6. systemd services

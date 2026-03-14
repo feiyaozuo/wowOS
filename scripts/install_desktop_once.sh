@@ -22,13 +22,16 @@ done
 apt-get update
 
 echo "[3/7] install desktop packages"
-apt-get install -y \
+apt-get install -y --no-install-recommends \
   lightdm \
   xserver-xorg \
   xinit \
   openbox \
   chromium \
-  unclutter
+  unclutter \
+  fonts-wqy-microhei
+apt-get clean
+rm -rf /var/lib/apt/lists/*
 
 echo "[4/7] ensure graphical target"
 systemctl set-default graphical.target
