@@ -38,10 +38,10 @@ fi
 # 1b. Expand image file so root partition can be resized (avoids "No space left on device" during apt install)
 IMG_SIZE_MB=$(($(stat -c%s "$IMG_NAME" 2>/dev/null || stat -f%z "$IMG_NAME") / 1024 / 1024))
 NEED_RESIZE=0
-if [ "$IMG_SIZE_MB" -lt 11500 ]; then
+if [ "$IMG_SIZE_MB" -lt 19500 ]; then
   NEED_RESIZE=1
-  echo "[wowOS] Expanding image to 12GB for desktop + dependencies (current ${IMG_SIZE_MB}MB)"
-  truncate -s 12G "$IMG_NAME"
+  echo "[wowOS] Expanding image to 20GB for desktop + dependencies (current ${IMG_SIZE_MB}MB)"
+  truncate -s 20G "$IMG_NAME"
 fi
 
 # 2. Attach image to loop device and mount partitions (works with or without partition suffixes)
@@ -54,23 +54,61 @@ fi
 
 # 2a. Resize partition 2 to use full image and grow root filesystem (if we expanded the image)
 if [ "$NEED_RESIZE" = "1" ]; then
+  echo "[wowOS] Partition table before resize:"
+  parted -s "$LOOP_DEV" print 2>/dev/null || sgdisk -p "$LOOP_DEV" 2>/dev/null || true
+  echo "[wowOS] blockdev info: $(blockdev --getsize64 "$LOOP_DEV" 2>/dev/null || true) bytes"
+
   echo "[wowOS] Resizing root partition to 100%"
+  RESIZE_OK=0
+
+  # Attempt 1-3: parted with exponential backoff
   for attempt in 1 2 3; do
     if parted -s "$LOOP_DEV" resizepart 2 100%; then
-      echo "[wowOS] Partition resized successfully"
+      echo "[wowOS] parted resizepart succeeded (attempt $attempt)"
+      RESIZE_OK=1
       break
     fi
-    if [ "$attempt" -lt 3 ]; then
-      echo "[wowOS] Parted retry $attempt/3..."
-      sleep 2
-    else
-      echo "[wowOS] ERROR: parted resizepart failed after 3 attempts"
-      exit 1
-    fi
+    echo "[wowOS] parted retry $attempt/3 failed, waiting $((attempt * 2))s..."
+    sleep $((attempt * 2))
   done
+
+  # Fallback: sgdisk (more compatible with kpartx-mapped devices)
+  if [ "$RESIZE_OK" = "0" ] && command -v sgdisk >/dev/null 2>&1; then
+    echo "[wowOS] Falling back to sgdisk to resize partition 2..."
+    DISK_SECTORS=$(blockdev --getsz "$LOOP_DEV" 2>/dev/null || echo "")
+    if [ -n "$DISK_SECTORS" ]; then
+      # Delete partition 2 and recreate it spanning to end of disk
+      START_SECTOR=$(sgdisk -i 2 "$LOOP_DEV" 2>/dev/null | awk '/First sector:/{print $3}')
+      if [ -n "$START_SECTOR" ]; then
+        if sgdisk -d 2 "$LOOP_DEV" && sgdisk -n "2:${START_SECTOR}:0" "$LOOP_DEV"; then
+          echo "[wowOS] sgdisk resize succeeded"
+          RESIZE_OK=1
+        fi
+      fi
+    fi
+  fi
+
+  if [ "$RESIZE_OK" = "0" ]; then
+    echo "[wowOS] ERROR: All partition resize attempts failed. Cannot continue."
+    echo "[wowOS] Troubleshooting: ensure parted >= 3.x and gdisk/sgdisk are installed."
+    exit 1
+  fi
+
   partprobe "$LOOP_DEV" 2>/dev/null || true
   blockdev --rereadpt "$LOOP_DEV" 2>/dev/null || true
   sleep 3
+
+  echo "[wowOS] Partition table after resize:"
+  parted -s "$LOOP_DEV" print 2>/dev/null || sgdisk -p "$LOOP_DEV" 2>/dev/null || true
+
+  # Verify partition 2 was actually resized (should be > half target size)
+  # Target is 20GB; expect at least 10GB after resize
+  MIN_EXPECTED_PART2_SIZE_MB=10000
+  PART2_SIZE_MB=$(parted -s "$LOOP_DEV" unit MB print 2>/dev/null | awk '/^ *2 /{gsub(/MB/,"",$4); print int($4)}' || echo "0")
+  echo "[wowOS] Partition 2 size after resize: ${PART2_SIZE_MB}MB"
+  if [ "${PART2_SIZE_MB:-0}" -lt "$MIN_EXPECTED_PART2_SIZE_MB" ]; then
+    echo "[wowOS] WARNING: Partition 2 may not have been resized correctly (reported ${PART2_SIZE_MB}MB, expected >= ${MIN_EXPECTED_PART2_SIZE_MB}MB). Proceeding anyway."
+  fi
 fi
 
 mkdir -p /mnt/wowos
@@ -87,9 +125,14 @@ else
   kpartx -av "$LOOP_DEV"
   MAPPER=$(basename "$LOOP_DEV")
   sleep 2
-  # Skip resize2fs on kpartx devices - incompatible with ext4 features
-  # Image already expanded via truncate, partition table already resized by parted
-  echo "[wowOS] Skipping resize2fs on kpartx device (known incompatibility with ext4)"
+  if [ "$NEED_RESIZE" = "1" ]; then
+    echo "[wowOS] Growing root filesystem (/dev/mapper/${MAPPER}p2)"
+    if resize2fs "/dev/mapper/${MAPPER}p2"; then
+      echo "[wowOS] resize2fs succeeded"
+    else
+      echo "[wowOS] resize2fs failed (exit code $?), continuing"
+    fi
+  fi
   mount /dev/mapper/${MAPPER}p2 /mnt/wowos
   mount /dev/mapper/${MAPPER}p1 /mnt/wowos/boot
 fi
@@ -114,9 +157,10 @@ echo "[wowOS] Root fs free space before apt:"
 df -h /mnt/wowos
 FREE_KB=$(df /mnt/wowos | awk 'NR==2 {print $4}')
 echo "[wowOS] Free space available: ${FREE_KB}KB ($((FREE_KB/1024))MB)"
-REQUIRED_KB=$((3 * 1024 * 1024))
+REQUIRED_KB=$((5 * 1024 * 1024))
 if [ "$FREE_KB" -lt "$REQUIRED_KB" ]; then
-  echo "[wowOS] ERROR: Not enough free space! Need at least 3GB, have $((FREE_KB/1024))MB"
+  echo "[wowOS] ERROR: Not enough free space! Need at least 5GB, have $((FREE_KB/1024))MB"
+  echo "[wowOS] Check partition resize completed: $(parted -s "$LOOP_DEV" print 2>/dev/null || true)"
   exit 1
 fi
 chroot /mnt/wowos apt-get update
