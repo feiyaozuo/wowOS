@@ -65,6 +65,7 @@ docker run --rm --privileged \
     chroot /mnt/wowos groupadd -r wowos 2>/dev/null || true
     chroot /mnt/wowos useradd -r -s /bin/false -g wowos -d /var/lib/wowos wowos 2>/dev/null || true
     chroot /mnt/wowos id admin >/dev/null 2>&1 || chroot /mnt/wowos useradd -m -s /bin/bash admin
+    chroot /mnt/wowos usermod -aG video,input admin 2>/dev/null || true
 
     # 5. Copy code
     mkdir -p /mnt/wowos/opt/wowos
@@ -115,7 +116,6 @@ xset -dpms
 xset s off
 xset s noblank
 unclutter -idle 0.5 -root >/dev/null 2>&1 &
-/opt/wowos/scripts/start_kiosk.sh &
 EOF
     chroot /mnt/wowos chown -R admin:admin /home/admin/.config
 

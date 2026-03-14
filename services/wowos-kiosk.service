@@ -1,6 +1,6 @@
 [Unit]
 Description=wowOS Kiosk Browser
-After=graphical.target wowos-desktop.service
+After=graphical.target display-manager.service wowos-desktop.service
 Wants=wowos-desktop.service
 
 [Service]
