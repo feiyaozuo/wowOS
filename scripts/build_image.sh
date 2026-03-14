@@ -111,11 +111,28 @@ if [ "$NEED_RESIZE" = "1" ]; then
   fi
 fi
 
+grow_root_fs() {
+  local DEV="$1"
+  echo "[wowOS] Growing root filesystem ($DEV)"
+  echo "[wowOS] resize2fs version: $(resize2fs -V 2>&1 | head -1)"
+  echo "[wowOS] e2fsck running first to ensure fs consistency..."
+  e2fsck -f -y "$DEV" || true
+  RESIZE_RC=0
+  resize2fs "$DEV" || RESIZE_RC=$?
+  if [ "$RESIZE_RC" -eq 0 ]; then
+    echo "[wowOS] resize2fs succeeded"
+  else
+    echo "[wowOS] resize2fs failed (exit code $RESIZE_RC)"
+    echo "[wowOS] Filesystem features: $(tune2fs -l "$DEV" 2>/dev/null | grep 'Filesystem features' || true)"
+    echo "[wowOS] Cannot grow filesystem; check e2fsprogs version (need >= 1.47 for orphan_file feature)."
+    exit 1
+  fi
+}
+
 mkdir -p /mnt/wowos
 if [ -b "${LOOP_DEV}p2" ]; then
   if [ "$NEED_RESIZE" = "1" ]; then
-    echo "[wowOS] Growing root filesystem (loop p2)"
-    resize2fs "${LOOP_DEV}p2"
+    grow_root_fs "${LOOP_DEV}p2"
   fi
   mount "${LOOP_DEV}p2" /mnt/wowos
   mount "${LOOP_DEV}p1" /mnt/wowos/boot
@@ -126,14 +143,7 @@ else
   MAPPER=$(basename "$LOOP_DEV")
   sleep 2
   if [ "$NEED_RESIZE" = "1" ]; then
-    echo "[wowOS] Growing root filesystem (/dev/mapper/${MAPPER}p2)"
-    # Attempt resize2fs; it may fail on some kpartx setups but is safe to try since
-    # the partition table has already been updated by parted/sgdisk above.
-    if resize2fs "/dev/mapper/${MAPPER}p2"; then
-      echo "[wowOS] resize2fs succeeded"
-    else
-      echo "[wowOS] resize2fs failed (exit code $?), continuing"
-    fi
+    grow_root_fs "/dev/mapper/${MAPPER}p2"
   fi
   mount /dev/mapper/${MAPPER}p2 /mnt/wowos
   mount /dev/mapper/${MAPPER}p1 /mnt/wowos/boot
