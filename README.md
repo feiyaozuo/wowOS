@@ -13,6 +13,7 @@
   <img alt="Platform" src="https://img.shields.io/badge/platform-Linux%20%2F%20Raspberry%20Pi-blue">
   <img alt="Focus" src="https://img.shields.io/badge/focus-data%20sovereignty-black">
   <img alt="License" src="https://img.shields.io/badge/license-TBD-lightgrey">
+  <a href="https://github.com/WowData-labs/wowOS/releases/latest"><img alt="Download" src="https://img.shields.io/github/v/release/WowData-labs/wowOS?label=Download%20Image&color=brightgreen"></a>
 </p>
 
 ---
@@ -345,6 +346,16 @@ If you care about any of the following, you are very welcome to join wowOS:
 **Early stage / actively evolving**
 
 wowOS is still in an early stage. The current focus is to make the system boundary, data governance capabilities, and application integration path solid before expanding the ecosystem and use cases.
+
+---
+
+## Download
+
+Pre-built images are published automatically after each successful build on the `main` branch.
+
+👉 **[Download the latest wowOS image from GitHub Releases](https://github.com/WowData-labs/wowOS/releases/latest)**
+
+After downloading, unzip and flash `wowos-1.0.img.zip` to an SD card using [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or `dd`. See [BUILD.md](./BUILD.md) for full instructions.
 
 ---
 

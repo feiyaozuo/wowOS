@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   # Use Node 24 early to avoid Node 20 deprecation warning (default from 2026-06)
@@ -41,7 +41,7 @@ jobs:
               set -e
               apt-get update -qq && apt-get install -y -qq \
                 wget curl zip xz-utils file kpartx util-linux \
-                parted e2fsprogs \
+                parted e2fsprogs gdisk \
                 qemu-user-static binfmt-support
               echo "[DEBUG] resize2fs: $(resize2fs -V 2>&1 | head -1)"
               echo "[DEBUG] losetup: $(losetup --version 2>&1 | head -1)"
@@ -70,3 +70,24 @@ jobs:
           path: build/wowos-*.img.zip
           if-no-files-found: error
           retention-days: 7
+
+      - name: Publish GitHub Release
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ env.WOWOS_VERSION }}
+          name: wowOS v${{ env.WOWOS_VERSION }}
+          make_latest: true
+          files: build/wowos-*.img.zip
+          body: |
+            ## wowOS v${{ env.WOWOS_VERSION }}
+
+            Built from commit ${{ github.sha }}
+
+            ### 下载 / Download
+
+            下载 `wowos-${{ env.WOWOS_VERSION }}.img.zip`，解压后使用 [Raspberry Pi Imager](https://www.raspberrypi.com/software/) 或 `dd` 命令刷入 SD 卡。
+
+            Download `wowos-${{ env.WOWOS_VERSION }}.img.zip`, unzip, then flash to SD card with [Raspberry Pi Imager](https://www.raspberrypi.com/software/) or `dd`.
+
+            See [BUILD.md](https://github.com/WowData-labs/wowOS/blob/main/BUILD.md) for full flash and setup instructions.

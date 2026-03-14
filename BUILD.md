@@ -16,7 +16,8 @@ git remote add origin https://github.com/WowData-labs/wowOS.git
 git push -u origin main
 ```
 
-After push, GitHub Actions builds the image on Linux; open **Actions**, pick the latest run, then download `wowos-image` (i.e. `wowos-1.0.img.zip`) from **Artifacts**.
+After push, GitHub Actions builds the image on Linux; the finished image is published as a **[GitHub Release](https://github.com/WowData-labs/wowOS/releases/latest)** — go to the **Releases** page and download `wowos-1.0.img.zip` directly.  
+Alternatively, open **Actions**, pick the latest run, then download `wowos-image` from **Artifacts** (available for 7 days).
 
 ## Requirements
 
@@ -46,7 +47,8 @@ cd /path/to/wowOS
 
 ### Option 3: Build on GitHub (full build inside privileged Docker)
 
-Push to `main` or `master`, or trigger "Build wowOS Image" from the repo **Actions** page. Download `wowos-image` from the run’s **Artifacts** when done.  
+Push to `main` or `master`, or trigger "Build wowOS Image" from the repo **Actions** page.  
+Once the build succeeds, a **GitHub Release** is created automatically — download `wowos-1.0.img.zip` directly from the **[Releases page](https://github.com/WowData-labs/wowOS/releases/latest)**.  
 The GitHub workflow runs `scripts/build_image.sh` inside a privileged Docker container, so the downloaded image already includes all required Python and desktop dependencies.
 
 ## Flash to SD card
