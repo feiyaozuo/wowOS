@@ -144,7 +144,7 @@ It is the most common issue when the EEPROM boot order is set to try USB before 
   - `admin` (desktop session user, used by LightDM autologin; member of `video` and `input` groups)
 - Dirs `/opt/wowos` (core), `/var/lib/wowos`, `/data` (data and audit)
 - All Python deps from `requirements.txt` preinstalled
-- Desktop stack preinstalled: `lightdm`, `xserver-xorg`, `xinit`, `openbox`, `xserver-xorg-input-libinput`, `xserver-xorg-video-fbdev`, `libgl1-mesa-dri`, `chromium`, `unclutter`, `dbus-x11`, `x11-xserver-utils`, `fonts-wqy-microhei`, NetworkManager
+- Desktop stack preinstalled: `lightdm`, `lightdm-gtk-greeter`, `xserver-xorg`, `xinit`, `openbox`, `xserver-xorg-input-libinput`, `xserver-xorg-video-fbdev`, `libgl1-mesa-dri`, `chromium`, `unclutter`, `curl`, `dbus-x11`, `x11-xserver-utils`, `fonts-wqy-microhei`, NetworkManager
 - systemd services enabled on boot:
   - `wowos-api.service`
   - `wowos-desktop.service` (Flask desktop web server on port 9090)

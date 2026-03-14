@@ -25,6 +25,7 @@ apt-get update
 echo "[3/9] install desktop packages"
 apt-get install -y --no-install-recommends \
   lightdm \
+  lightdm-gtk-greeter \
   xserver-xorg \
   xinit \
   openbox \
@@ -33,6 +34,10 @@ apt-get install -y --no-install-recommends \
   libgl1-mesa-dri \
   chromium \
   unclutter \
+  curl \
+  dbus-x11 \
+  x11-xserver-utils \
+  network-manager \
   fonts-wqy-microhei
 apt-get clean
 rm -rf /var/lib/apt/lists/*
@@ -52,6 +57,7 @@ cat > /etc/lightdm/lightdm.conf.d/50-wowos-autologin.conf << 'AUTOLOGIN'
 autologin-user=admin
 autologin-user-timeout=0
 user-session=openbox
+greeter-session=lightdm-gtk-greeter
 AUTOLOGIN
 
 echo "[7/9] configure Openbox autostart (display settings)"

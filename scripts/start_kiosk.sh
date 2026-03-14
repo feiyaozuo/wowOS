@@ -17,8 +17,10 @@ done
 
 # Wait for the desktop web server to be reachable.
 for _i in $(seq 1 30); do
-  if curl -fsS "$URL" >/dev/null 2>&1; then
-    break
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsS "$URL" >/dev/null 2>&1 && break
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q --spider "$URL" 2>/dev/null && break
   fi
   sleep 2
 done
@@ -29,4 +31,7 @@ exec chromium \
   --disable-infobars \
   --disable-session-crashed-bubble \
   --disable-features=Translate \
+  --disable-gpu-compositing \
+  --disable-dev-shm-usage \
+  --disable-crash-reporter \
   "$URL"

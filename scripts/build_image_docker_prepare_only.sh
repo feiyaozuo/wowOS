@@ -67,6 +67,10 @@ docker run --rm --privileged \
     mkdir -p /mnt/wowos/etc/systemd/system/multi-user.target.wants
     ln -sf ../wowos-desktop.service /mnt/wowos/etc/systemd/system/multi-user.target.wants/wowos-desktop.service 2>/dev/null || true
     touch /mnt/wowos/boot/ssh
+    # Ensure GPU has enough memory for graphical desktop + Chromium kiosk
+    if ! grep -q "^gpu_mem=" /mnt/wowos/boot/config.txt 2>/dev/null; then
+      printf "\n# wowOS: ensure enough GPU memory for desktop + kiosk\ngpu_mem=128\n" >> /mnt/wowos/boot/config.txt
+    fi
     # 方案2：桌面与 kiosk — 脚本放到 /opt/wowos/scripts/
     mkdir -p /mnt/wowos/opt/wowos/scripts
     cp /wowos/scripts/install_desktop_once.sh /mnt/wowos/opt/wowos/scripts/

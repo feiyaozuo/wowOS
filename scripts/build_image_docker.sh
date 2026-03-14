@@ -52,9 +52,9 @@ docker run --rm --privileged \
     chroot /mnt/wowos apt-get update -qq
     chroot /mnt/wowos apt-get install -y -qq --no-install-recommends \
       python3 python3-pip python3-venv sqlite3 \
-      lightdm xserver-xorg xinit openbox \
+      lightdm lightdm-gtk-greeter xserver-xorg xinit openbox \
       xserver-xorg-input-libinput xserver-xorg-video-fbdev libgl1-mesa-dri \
-      chromium unclutter \
+      chromium unclutter curl \
       dbus-x11 x11-xserver-utils \
       network-manager \
       fonts-wqy-microhei
@@ -97,6 +97,12 @@ docker run --rm --privileged \
     # 8. SSH
     touch /mnt/wowos/boot/ssh
 
+    # 8b. Ensure GPU has enough memory for graphical desktop + Chromium kiosk
+    if ! grep -q "^gpu_mem=" /mnt/wowos/boot/config.txt 2>/dev/null; then
+      echo "[wowOS] Adding gpu_mem=128 to config.txt for graphical desktop"
+      printf "\n# wowOS: ensure enough GPU memory for desktop + kiosk\ngpu_mem=128\n" >> /mnt/wowos/boot/config.txt
+    fi
+
     # 9b. Desktop & kiosk — scripts + LightDM autologin + Openbox autostart
     mkdir -p /mnt/wowos/opt/wowos/scripts
     cp /wowos/scripts/start_kiosk.sh /mnt/wowos/opt/wowos/scripts/
@@ -108,6 +114,7 @@ docker run --rm --privileged \
 autologin-user=admin
 autologin-user-timeout=0
 user-session=openbox
+greeter-session=lightdm-gtk-greeter
 EOF
 
     mkdir -p /mnt/wowos/home/admin/.config/openbox
