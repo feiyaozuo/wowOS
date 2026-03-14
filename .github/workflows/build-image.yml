@@ -36,10 +36,10 @@ jobs:
             -e WOWOS_VERSION="$WOWOS_VERSION" \
             -e WOWOS_CI=0 \
             -w /wowos \
-            ubuntu:22.04 \
+            ubuntu:24.04 \
             bash -c '
               set -e
-              apt-get update -qq && apt-get install -y -qq \
+              DEBIAN_FRONTEND=noninteractive apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
                 wget curl zip xz-utils file kpartx util-linux \
                 parted e2fsprogs gdisk \
                 qemu-user-static binfmt-support
