@@ -53,13 +53,53 @@ The GitHub workflow runs `scripts/build_image.sh` inside a privileged Docker con
 
 ## Flash to SD card
 
+> **Important:** wowOS must be flashed to a **microSD card**. Do not flash to a USB drive unless you have specifically configured your Raspberry Pi to USB-boot.
+
 1. Unzip: `unzip wowos-1.0.img.zip`
-2. Use [Raspberry Pi Imager](https://www.raspberrypi.com/software/) → "Use custom" and point to the extracted `.img`, or use `dd`:
+2. Flash using **[Raspberry Pi Imager](https://www.raspberrypi.com/software/)** (recommended):
+   - Open Raspberry Pi Imager
+   - Click **"Choose OS"** → **"Use custom"** and select `wowos-1.0.img`
+   - Click **"Choose Storage"** and select your **microSD card** (not a USB drive)
+   - *(Optional)* Click the gear ⚙ icon (Advanced Options) to pre-configure hostname, SSH user/password
+   - Click **"Write"**
+
+   Alternatively, use `dd` on Linux/macOS:
    ```bash
-   sudo dd if=raspios-lite.img of=/dev/sdX bs=4M status=progress conv=fsync
+   sudo dd if=wowos-1.0.img of=/dev/sdX bs=4M status=progress conv=fsync
    ```
-   (Replace `sdX` with your SD device.)
-3. Insert card and power on the Pi.
+   (Replace `sdX` with your SD card device, e.g. `/dev/sdb`. **Do not use a USB drive path.**)
+3. Eject the SD card safely, insert it into the Raspberry Pi's **microSD slot**, and power on.
+
+## Troubleshooting
+
+### Pi shows "Trying boot mode USB-MSD" / red screen with partition errors on startup
+
+This means your Raspberry Pi is trying to boot from a **USB device** instead of the microSD card.  
+It is the most common issue when the EEPROM boot order is set to try USB before SD, or when no valid SD card is present.
+
+**Steps to fix:**
+
+1. **Verify the SD card is inserted correctly** — make sure the microSD card is fully seated in the Raspberry Pi's SD card slot (bottom of the board).
+
+2. **Re-flash the SD card** — the SD card may not have been written correctly.  Use Raspberry Pi Imager and follow the [Flash to SD card](#flash-to-sd-card) steps above. Do **not** select a USB drive as the target storage.
+
+3. **Remove all USB storage devices** — unplug any USB drives or USB hard disks from the Raspberry Pi before booting. A connected USB drive can confuse the boot process if the EEPROM tries USB before SD.
+
+4. **Raspberry Pi 5 EEPROM boot order** — on some Raspberry Pi 5 units the default EEPROM boot order may attempt USB-MSD before SD. To reset the boot order:
+   - On a working Pi (or using another SD card with standard Raspberry Pi OS), run:
+     ```bash
+     sudo raspi-config
+     ```
+     Navigate to **Advanced Options → Boot Order** and select **SD Card Boot** (or set `BOOT_ORDER=0xf41` to try SD first).
+   - Alternatively, from the command line:
+     ```bash
+     sudo rpi-eeprom-config --edit
+     ```
+     Set `BOOT_ORDER=0xf41` (SD first, then USB, then network), save, and reboot.
+
+5. **Raspberry Pi Imager – use "Raspberry Pi 5" as the device** — when using Raspberry Pi Imager, select **Raspberry Pi 5** as the device type so the correct firmware files are written to the boot partition.
+
+---
 
 ## After flash
 
