@@ -27,6 +27,9 @@ apt-get install -y --no-install-recommends \
   xserver-xorg \
   xinit \
   openbox \
+  xserver-xorg-input-libinput \
+  xserver-xorg-video-fbdev \
+  libgl1-mesa-dri \
   chromium \
   unclutter \
   fonts-wqy-microhei

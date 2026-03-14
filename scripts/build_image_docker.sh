@@ -53,6 +53,7 @@ docker run --rm --privileged \
     chroot /mnt/wowos apt-get install -y -qq --no-install-recommends \
       python3 python3-pip python3-venv sqlite3 \
       lightdm xserver-xorg xinit openbox \
+      xserver-xorg-input-libinput xserver-xorg-video-fbdev libgl1-mesa-dri \
       chromium unclutter \
       dbus-x11 x11-xserver-utils \
       network-manager \
