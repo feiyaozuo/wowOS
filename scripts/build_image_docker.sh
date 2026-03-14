@@ -50,7 +50,7 @@ docker run --rm --privileged \
     mount --bind /sys /mnt/wowos/sys
     cp /etc/resolv.conf /mnt/wowos/etc/resolv.conf
     chroot /mnt/wowos apt-get update -qq
-    chroot /mnt/wowos apt-get install -y -qq \
+    chroot /mnt/wowos apt-get install -y -qq --no-install-recommends \
       python3 python3-pip python3-venv sqlite3 \
       lightdm xserver-xorg xinit openbox \
       chromium unclutter \
@@ -75,7 +75,7 @@ docker run --rm --privileged \
 
     # 5b. Install Python deps from requirements.txt inside the image
     if [ -f /wowos/requirements.txt ]; then
-      chroot /mnt/wowos python3 -m pip install --break-system-packages -r /opt/wowos/requirements.txt
+      chroot /mnt/wowos python3 -m pip install --break-system-packages --no-cache-dir -r /opt/wowos/requirements.txt
     fi
 
     # 6. systemd

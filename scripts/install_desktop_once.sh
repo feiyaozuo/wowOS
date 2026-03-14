@@ -22,7 +22,7 @@ done
 apt-get update
 
 echo "[3/7] install desktop packages"
-apt-get install -y \
+apt-get install -y --no-install-recommends \
   lightdm \
   xserver-xorg \
   xinit \
