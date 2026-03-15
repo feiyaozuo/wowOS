@@ -132,6 +132,7 @@ EOF
     chroot /mnt/wowos systemctl enable wowos-desktop.service 2>/dev/null || true
     chroot /mnt/wowos systemctl enable wowos-kiosk.service
     chroot /mnt/wowos systemctl set-default graphical.target
+    chroot /mnt/wowos systemctl mask NetworkManager-wait-online.service 2>/dev/null || true
 
     # 10. Unmount
     umount /mnt/wowos/dev /mnt/wowos/proc /mnt/wowos/sys

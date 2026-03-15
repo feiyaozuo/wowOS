@@ -279,6 +279,9 @@ chroot /mnt/wowos systemctl enable wowos-desktop.service 2>/dev/null || true
 chroot /mnt/wowos systemctl enable wowos-kiosk.service
 chroot /mnt/wowos systemctl set-default graphical.target
 
+# Avoid boot black screen: do not wait for network (NetworkManager-wait-online blocks indefinitely when no cable/WiFi)
+chroot /mnt/wowos systemctl mask NetworkManager-wait-online.service 2>/dev/null || true
+
 # 10. Unmount and detach loop device (handle both direct loop partitions and kpartx mappers)
 umount /mnt/wowos/var/cache/apt/archives 2>/dev/null || true
 rm -rf "${BUILD_DIR}/.apt-cache" 2>/dev/null || true
