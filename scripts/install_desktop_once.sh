@@ -60,20 +60,23 @@ user-session=openbox
 greeter-session=lightdm-gtk-greeter
 AUTOLOGIN
 
-echo "[7/9] configure Openbox autostart (display settings)"
+echo "[7/9] configure Openbox autostart (display settings + kiosk in user session)"
 mkdir -p /home/admin/.config/openbox
-cat > /home/admin/.config/openbox/autostart << 'AUTOSTART'
+cat > /home/admin/.config/openbox/autostart << 'AUTOSTART_EOF'
 xset -dpms
 xset s off
 xset s noblank
 unclutter -idle 0.5 -root >/dev/null 2>&1 &
-AUTOSTART
+
+/opt/wowos/scripts/start_kiosk.sh >> /home/admin/wowos-kiosk.log 2>&1 &
+AUTOSTART_EOF
 chown -R admin:admin /home/admin/.config
 
-echo "[8/9] enable services"
+echo "[8/9] enable services; kiosk runs from Openbox, not systemd"
 systemctl enable wowos-api.service
 systemctl enable wowos-desktop.service
-systemctl enable wowos-kiosk.service
+systemctl disable wowos-kiosk.service 2>/dev/null || true
+systemctl mask wowos-kiosk.service 2>/dev/null || true
 
 echo "[9/9] desktop install finished — rebooting into graphical desktop"
 mkdir -p /var/lib/wowos

@@ -118,19 +118,22 @@ greeter-session=lightdm-gtk-greeter
 EOF
 
     mkdir -p /mnt/wowos/home/admin/.config/openbox
-    cat > /mnt/wowos/home/admin/.config/openbox/autostart << "EOF"
+    cat > /mnt/wowos/home/admin/.config/openbox/autostart << "AUTOSTART_EOF"
 xset -dpms
 xset s off
 xset s noblank
 unclutter -idle 0.5 -root >/dev/null 2>&1 &
-EOF
+
+/opt/wowos/scripts/start_kiosk.sh >> /home/admin/wowos-kiosk.log 2>&1 &
+AUTOSTART_EOF
     chroot /mnt/wowos chown -R admin:admin /home/admin/.config
 
-    # Enable services and graphical target
+    # Enable services and graphical target; kiosk runs from Openbox, not systemd
     chroot /mnt/wowos systemctl enable lightdm
     chroot /mnt/wowos systemctl enable wowos-api.service
     chroot /mnt/wowos systemctl enable wowos-desktop.service 2>/dev/null || true
-    chroot /mnt/wowos systemctl enable wowos-kiosk.service
+    chroot /mnt/wowos systemctl disable wowos-kiosk.service 2>/dev/null || true
+    chroot /mnt/wowos systemctl mask wowos-kiosk.service 2>/dev/null || true
     chroot /mnt/wowos systemctl set-default graphical.target
     chroot /mnt/wowos systemctl mask NetworkManager-wait-online.service 2>/dev/null || true
 

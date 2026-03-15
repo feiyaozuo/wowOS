@@ -3,11 +3,13 @@ set -euo pipefail
 
 export DISPLAY="${DISPLAY:-:0}"
 export XAUTHORITY="${XAUTHORITY:-/home/admin/.Xauthority}"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 URL="http://127.0.0.1:9090"
+LOG_FILE="/home/admin/wowos-kiosk.log"
 
-# Wait for X display to become available (needed when launched from systemd
-# before LightDM has finished initialising the session).
+echo "[kiosk] boot at $(date '+%F %T')" >> "$LOG_FILE"
+
 for _i in $(seq 1 60); do
   if xset q >/dev/null 2>&1; then
     break
@@ -15,8 +17,7 @@ for _i in $(seq 1 60); do
   sleep 1
 done
 
-# Wait for the desktop web server to be reachable.
-for _i in $(seq 1 30); do
+for _i in $(seq 1 60); do
   if command -v curl >/dev/null 2>&1; then
     curl -fsS "$URL" >/dev/null 2>&1 && break
   elif command -v wget >/dev/null 2>&1; then
@@ -25,13 +26,19 @@ for _i in $(seq 1 30); do
   sleep 2
 done
 
-exec chromium \
-  --kiosk \
-  --no-first-run \
-  --disable-infobars \
-  --disable-session-crashed-bubble \
-  --disable-features=Translate \
-  --disable-gpu-compositing \
-  --disable-dev-shm-usage \
-  --disable-crash-reporter \
-  "$URL"
+while true; do
+  chromium \
+    --kiosk \
+    --ozone-platform=x11 \
+    --no-first-run \
+    --disable-infobars \
+    --disable-session-crashed-bubble \
+    --disable-features=Translate \
+    --disable-gpu-compositing \
+    --disable-dev-shm-usage \
+    --disable-crash-reporter \
+    "$URL" >> "$LOG_FILE" 2>&1 || true
+
+  echo "[kiosk] chromium exited, restarting at $(date '+%F %T')" >> "$LOG_FILE"
+  sleep 2
+done
